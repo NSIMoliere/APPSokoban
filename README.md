@@ -11,6 +11,12 @@ Build and Install
 ### Dependencies
 To run this game you'll need python3 and pygame installed
 
+To install pygame in your home directory:
+```pip install -U pygame --user```
+
+See https://www.pygame.org/wiki/GettingStarted for more information.
+
+
 ### How to run
 ```python3 Sokoban.py```
 
