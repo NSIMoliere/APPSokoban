@@ -10,12 +10,11 @@ from pygame.locals import *
 import common as C
 import scores as S
 from graphics import *
+from sounds import *
 from level import *
 from explore import *
-from player import *
 import scores as S
 from queue import Queue
-from random import randrange
 
 # correspondance between keys on keyboard and direction in Sokoban
 KEYDIR = {
@@ -178,7 +177,7 @@ class GameInterface:
 
         self.all_texts = [
             self.txtInfo,
-        ] +self.always_texts
+        ] + self.always_texts
 
     def compute_ymessages(self):
         return C.WINDOW_HEIGHT - 80
@@ -305,14 +304,14 @@ class Game:
 
     def __init__(self, window, continueGame=True):
         self.window = window
-        self.player = None
+        self.character = None
         self.interface = None
         self.level = Level(
             self,
             S.scores.current_pack,  # filename
         )
-        self.load_textures()
-        self.load_sounds()
+        self.textures = Textures()
+        self.sounds = Sounds()
 
         if not continueGame:
             S.scores.index_level = 1
@@ -323,93 +322,6 @@ class Game:
         self.has_changed = False
         self.selected_position = None
         self.origin_board = (0, 0)
-
-    def load_textures(self):
-        """
-        loads the textures that will be drawn in the game
-        (walls, boxes, player, etc.)
-        """
-        def fn(f):
-            return os.path.join('assets', 'images', f)
-
-        ground = pygame.image.load(fn('stoneCenter.png')).convert_alpha()
-
-        self.textures = {
-            C.ORIG_SPRITESIZE: {
-                C.WALL: pygame.image.load(fn('wall.png')).convert_alpha(),
-                # C.BOX: pygame.image.load(fn('crate.png')).convert_alpha(),
-                C.BOX: pygame.image.load(fn('box.png')).convert_alpha(),
-                C.TARGET: ground,
-                # target overlay
-                C.TARGETOVER: pygame.image.load(fn('target.png')).convert_alpha(),
-                # C.TARGET_FILLED: pygame.image.load(fn('crate_correct.png')).convert_alpha(),
-                C.TARGET_FILLED: pygame.image.load(fn('box_correct.png')).convert_alpha(),
-                C.PLAYER: pygame.image.load(fn('player_sprites.png')).convert_alpha(),
-                # C.PLAYER: pygame.image.load(fn('character-female-knight.png')).convert_alpha(),
-                C.GROUND: ground}}
-
-        def surfhigh(size, color, alpha):
-            surf = pygame.Surface((size, size))
-            surf.set_alpha(alpha)
-            surf.fill(color)  # green highlight
-            return surf
-
-        # small surfaces to draw attention to a particular tile of the board
-        # e.g., to highlight a tile
-        # green highlight, for attainable tiles
-        def surfAtt(s): return surfhigh(s, (0, 255, 0), 50)
-        # blue highlight,  to show successors of boxes
-        def surfSucc(s): return surfhigh(s, (0, 0, 255), 50)
-        # yellow highlight, to show selection
-        def surfSelect(s): return surfhigh(s, (255, 255, 0), 200)
-        # red highlight, in case of an error
-        def surfError(s): return surfhigh(s, (255, 0, 0), 200)
-
-        self.highlights = {}
-        for s in C.SPRITESIZES:
-            self.highlights[s] = {
-                C.HATT:   surfAtt(s),
-                C.HSUCC:  surfSucc(s),
-                C.HSELECT: surfSelect(s),
-                C.HERROR: surfError(s)
-            }
-
-    def load_sounds(self):
-        """
-        load the different sound effects for the game
-        - footstep when walking
-        - wood friction when pushing a box
-        - jingle win when a level is finished
-        """
-        if not C.WITH_SOUND:
-            return
-
-        def fn(f):
-            return os.path.join('assets', 'sounds', f)
-
-        def ld(template, lst, num, volume):
-            for i in range(num):
-                f = fn(template.format(i))
-                snd = pygame.mixer.Sound(f)
-                snd.set_volume(volume)
-                lst.append(snd)
-
-        self.sndFootstep = []
-        filetemplate = 'footstep-dirt-{:02d}.wav'
-        ld(filetemplate, self.sndFootstep, C.SND_FOOTSTEP_NUM, .3)
-
-        self.sndWoodpush = []
-        filetemplate = 'wood-friction-{:02d}.wav'
-        ld(filetemplate, self.sndWoodpush, C.SND_WOODFRIC_NUM, .8)
-
-        self.footstep_idx = -1
-        self.woodpush_idx = -1
-
-        self.channelPushing = None
-        self.channelFootsteps = None
-
-        self.sndWin = pygame.mixer.Sound(fn('jingle-win.ogg'))
-        self.sndWin.set_volume(.06)
 
     def load_next(self):
         self.load_level(nextLevel=True)
@@ -451,15 +363,15 @@ class Game:
 
         self.create_board()
 
-        if self.player:
+        if self.character:
             self.interface.level = self.level
-            self.player.level = self.level
+            self.character.level = self.level
         else:
-            self.player = Player(self, self.level)
+            self.character = Character(self, self.level)
 
         # scales textures to current spritesize if necessary
-        self.update_textures()
-        self.player.update_textures()
+        self.textures.update_textures()
+        self.character.update_textures()
 
         sc = S.scores.get()
         self.interface.best_moves(sc)
@@ -467,73 +379,11 @@ class Game:
         return True
 
     def create_board(self):
-        # determine size of level on screen
-        max_height = C.WINDOW_HEIGHT - 2*C.MAP_BORDER
-        max_width = C.WINDOW_WIDTH - 2*C.MAP_BORDER
-
-        max_sprite_size = min(
-            max_height / self.level.height,
-            max_width / self.level.width)
-
-        # print ('could use sprite size', max_sprite_size)
-        minss = C.SPRITESIZES[0]
-        maxss = C.SPRITESIZES[-1]
-
-        if max_sprite_size < minss:
-            sp = minss
-        elif max_sprite_size > maxss:
-            sp = maxss
-        else:
-            sp = minss
-            for size in C.SPRITESIZES:
-                if size > max_sprite_size:
-                    break
-                sp = size
-
-        verbose('will use sprite size', sp)
-        C.SPRITESIZE = sp
-
-        # space to draw the level
+        self.textures.compute_sprite_size(self.level.height, self.level.width)
+        # surface to draw the level
         self.board = pygame.Surface((
             self.level.width * C.SPRITESIZE,
             self.level.height * C.SPRITESIZE))
-
-    def update_textures(self):
-        if C.SPRITESIZE not in self.textures:
-            sp = C.SPRITESIZE
-            self.textures[sp] = {}
-            for key, texture in self.textures[C.ORIG_SPRITESIZE].items():
-                sc = pygame.transform.smoothscale(texture, (sp, sp))
-                self.textures[sp][key] = sc
-
-    def sound_play_footstep(self):
-        if not C.WITH_SOUND:
-            return
-        if self.channelFootsteps is not None:
-            if self.channelFootsteps.get_busy():
-                return
-        # self.footstep_idx += 1
-        # self.footstep_idx %= C.SND_FOOTSTEPNUM
-        self.footstep_idx = randrange(C.SND_FOOTSTEP_NUM)
-        self.channelFootsteps = self.sndFootstep[self.footstep_idx].play()
-
-    def sound_play_pushing(self):
-        if not C.WITH_SOUND:
-            return
-        # check if previous sound is still playing
-        if self.channelPushing is not None:
-            if self.channelPushing.get_busy():
-                return
-
-        # self.channelPushing = self.sndPushing.play() #0,1000)
-#
-        self.woodpush_idx = randrange(C.SND_WOODFRIC_NUM)
-        self.channelPushing = self.sndWoodpush[self.woodpush_idx].play()
-
-    def sound_play_win(self):
-        if not C.WITH_SOUND:
-            return
-        self.sndWin.play()
 
     def start(self):
         """
@@ -592,7 +442,7 @@ class Game:
                 return False
 
             elif event.key in KEYDIR.keys():
-                self.move_player(event.key, continue_until_released=True)
+                self.move_character(event.key, continue_until_released=True)
 
             elif event.key == K_n or event.key == K_GREATER:
                 ret = self.load_level(nextLevel=True)
@@ -611,8 +461,7 @@ class Game:
 
             # "Test" key
             elif event.key == K_t:
-                # Add code here that you would like to trigger
-                # with the 'T' key
+                # Add code here that you would like to trigger with the 'T' key
                 # For now, just move in a circle in the 'test_move' method
                 self.test_move()
 
@@ -644,22 +493,22 @@ class Game:
             self.window = pygame.display.set_mode(
                 (C.WINDOW_WIDTH, C.WINDOW_HEIGHT), RESIZABLE)
             self.create_board()
-            self.update_textures()
-            self.player.update_textures()
+            self.textures.update_textures()
+            self.character.update_textures()
             self.interface.update_positions()
 
         return True
 
-    def move_player(self, key, continue_until_released=False):
+    def move_character(self, key, continue_until_released=False):
         """
         A direction key has been pressed.
-        Move (or try to move) the player in this direction
+        Move (or try to move) the character in this direction
         until the key is released
         """
         direction = KEYDIR[key]
 
-        # Ask to move player
-        status = self.player.start_move(direction)
+        # Ask to move character
+        status = self.character.start_move(direction)
 
         # after a box has been moved, the 'cancel' button becomes
         # available
@@ -683,9 +532,9 @@ class Game:
         is_win = False
         while True:
             if status == C.ST_PUSHING:
-                self.sound_play_pushing()
+                self.sounds.play_pushing()
             else:
-                self.sound_play_footstep()
+                self.sounds.play_footstep()
 
             # slows loop to target FPS
             t = self.clock.tick(C.TARGET_FPS)
@@ -718,7 +567,7 @@ class Game:
                             pygame.event.post(save_event)
                         break
 
-            on_tile = self.player.continue_move()
+            on_tile = self.character.continue_move()
 
             if on_tile:
                 if prev_status == C.ST_PUSHING:
@@ -731,20 +580,17 @@ class Game:
 
                 # key not pressed anymore and finished arriving on the tile
                 if stop_next_tile:
-                    self.player.stop_move()
+                    self.character.stop_move()
                     break
                 # otherwise, continue, and play new sound
 
             prev_status = status
-            status = self.player.status
+            status = self.character.status
 
             self.update_screen()
 
         # stop sounds
-        if self.channelFootsteps is not None:
-            self.channelFootsteps.stop()
-        if self.channelPushing is not None:
-            self.channelPushing.stop()
+        self.sounds.stop_move_push()
 
         if is_win:
             self.level_win()
@@ -769,7 +615,6 @@ class Game:
             self.level.highlight([position], C.HSELECT)
         else:
             verbose("position selected, what now?")
-
 
     def wait_key(self, update=True):
         if update:
@@ -805,8 +650,11 @@ class Game:
         self.board.fill(C.WHITE)
 
         self.level.render(
-            self.board, self.textures[C.SPRITESIZE], self.highlights)
-        self.player.render(self.board, self.textures[C.ORIG_SPRITESIZE])
+            self.board,
+            self.textures.get(C.SPRITESIZE),
+            self.textures.highlights
+        )
+        self.character.render(self.board)
 
         if self.has_changed:
             self.has_changed = False
@@ -825,7 +673,7 @@ class Game:
 
     def level_win(self):
         S.scores.update(self.level.num_moves)
-        self.sound_play_win()
+        self.sounds.play_win()
         self.update_screen(flip=False)
         self.interface.show_win(self.window, S.scores.index_level)
         self.wait_key(update=False)
@@ -837,8 +685,6 @@ class Game:
         print("Waiting for keypress...")
         self.wait_key()
 
-
-
     def test_move(self):
         """
         "automated" movement: pretend the user has pressed a direction key
@@ -847,4 +693,4 @@ class Game:
         """
         for m in [C.UP, C.RIGHT, C.DOWN, C.LEFT]:
             key = DIRKEY[m]
-            self.move_player(key)
+            self.move_character(key)
