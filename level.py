@@ -216,6 +216,25 @@ class Level:
     def push_state(self):
         self.state_stack.append(self.get_current_state())
 
+    # Pascal
+    def aide(self):
+        x, y = self.player_position
+        for y in range(self.height):
+            for x in range(self.width):
+                CasesOcc = []
+                for d, (mx, my) in enumerate(C.DIRS):
+                    if x+mx >= 0 and x+mx < self.width and y+my >= 0 and y+my < self.height:
+                        if not (self.is_empty((x+mx, y+my)) or self.has_box((x+mx, y+my))):
+                            CasesOcc.append(C.DIRS[d])
+                if (C.DIRS[C.UP] in CasesOcc) or (C.DIRS[C.DOWN] in CasesOcc):
+                    if (C.DIRS[C.LEFT] in CasesOcc) or (C.DIRS[C.RIGHT] in CasesOcc):
+                        if not (self.is_wall((x, y)) or self.map[y][x] == C.AIR):
+                            self.mhighlight[y][x] = C.HERROR
+                if (C.DIRS[C.LEFT] in CasesOcc) or (C.DIRS[C.RIGHT] in CasesOcc):
+                    if (C.DIRS[C.UP] in CasesOcc) or (C.DIRS[C.DOWN] in CasesOcc):
+                        if not (self.is_wall((x, y)) or self.map[y][x] == C.AIR):
+                            self.mhighlight[y][x] = C.HERROR
+
     def move_player(self, direction):
         """
         Update the internal state of the level after a player movement:
@@ -265,6 +284,8 @@ class Level:
 
         if player_status != C.ST_IDLE:
             self.num_moves += 1
+
+        self.aide()
 
         return player_status
 
