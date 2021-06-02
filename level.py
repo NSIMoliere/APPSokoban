@@ -21,13 +21,16 @@ class Level:
 
     def __init__(self, game, filename):
         self.game = game
+        verbose("Nouveau Jeu : " + str(game))
         self.num_moves = 0
-        self.filename = filename
+        self.filename = filename # String Nom du fichier : .txt
         self.level_lines = []
         self.level_number = 0
         self.load_file()    # read whole file
         self.loaded = False  # True when a level is loaded
         self.pushed_box = None
+        
+        # verbose("Graphe Mouvement Caisse :" + str(gmc.grapheMC))
 
     def place_box(self, box):
         x, y = box
@@ -42,7 +45,6 @@ class Level:
         self.player_position = p
 
     def parse_rows(self, rows, symbols):
-
         self.map = []
         max_width = 0
         self.boxes = []
@@ -98,9 +100,9 @@ class Level:
             self.mboxes[by][bx] = True
 
         verbose("Level size: ", self.width, "x", self.height)
-        verbose(self.map)
-        verbose(self.mboxes)
-        verbose(self.boxes)
+        # verbose(self.map)
+        # verbose(self.mboxes)
+        verbose("boxes :" + str(self.boxes))
 
     def load_file(self):
         """
@@ -154,6 +156,10 @@ class Level:
         # Use DFS to mark the interior floor as ground
         dfs = DFS(self)
         mark = dfs.search_floor(self.player_position)
+        
+        #
+        self.gms = GMC(self,self.player_position)
+        
         for y in range(self.height):
             for x in range(self.width):
                 if mark[y][x]:
@@ -200,7 +206,6 @@ class Level:
     def is_empty(self, pos):
         return self.is_floor(pos) and not self.has_box(pos)
 
-
     def get_current_state(self):
         return {'mboxes': deepcopy(self.mboxes),
                 'player': self.player_position,
@@ -215,7 +220,38 @@ class Level:
 
     def push_state(self):
         self.state_stack.append(self.get_current_state())
+        verbose("dernier etat (Level.state_stack[-1]) : " + str(self.state_stack[-1]))
+    
+    """
+    # Pascal
+    def aide(self):
+        x, y = self.player_position
+        for y in range(self.height):
+            for x in range(self.width):
+                CasesOcc = []
+                for d, (mx, my) in enumerate(C.DIRS):
+                    if x+mx >= 0 and x+mx < self.width and y+my >= 0 and y+my < self.height:
+                        if not (self.is_empty((x+mx, y+my)) or self.has_box((x+mx, y+my))):
+                            CasesOcc.append(C.DIRS[d])
+                if (C.DIRS[C.UP] in CasesOcc) or (C.DIRS[C.DOWN] in CasesOcc):
+                    if (C.DIRS[C.LEFT] in CasesOcc) or (C.DIRS[C.RIGHT] in CasesOcc):
+                        if not (self.is_wall((x, y)) or self.map[y][x] == C.AIR):
+                            self.mhighlight[y][x] = C.HERROR
+                if (C.DIRS[C.LEFT] in CasesOcc) or (C.DIRS[C.RIGHT] in CasesOcc):
+                    if (C.DIRS[C.UP] in CasesOcc) or (C.DIRS[C.DOWN] in CasesOcc):
+                        if not (self.is_wall((x, y)) or self.map[y][x] == C.AIR):
+                            self.mhighlight[y][x] = C.HERROR
+    """
+                            
+    # François
+    def aide(self):
+        for y in range(self.height):
+            for x in range(self.width):
+                if (x,y) in self.gms.grapheMC.keys() and (x,y) not in self.gms.possibles :
+                    self.mhighlight[x][y] = C.HERROR
+                    
 
+    
     def move_player(self, direction):
         """
         Update the internal state of the level after a player movement:
@@ -265,7 +301,15 @@ class Level:
 
         if player_status != C.ST_IDLE:
             self.num_moves += 1
-
+        
+        self.gms.update(self)
+        # verbose("Renvoyé par Level.move_player() (0-bloque / 1-libre / 2-pousse)" + str(player_status))
+        if player_status == 2 :
+            self.gms.update(self)
+            verbose("GMC :\n" + str(self.gms))
+        
+        self.aide()
+        
         return player_status
 
     def hide_pushed_box(self):
@@ -284,6 +328,8 @@ class Level:
             for x in range(self.width):
                 if self.mboxes[y][x]:
                     self.boxes.append((x, y))
+        self.gms.update(self)
+                    
 
     def cancel_last_change(self):
         """
@@ -307,12 +353,14 @@ class Level:
                 return False
         return True
 
+
+    
     def render(self, window, textures, highlights):
         """
         Render the whole level.
         Some tiles might be highlighted.
         """
-
+        
         for y in range(self.height):
             for x in range(self.width):
                 pos = (x * C.SPRITESIZE, y * C.SPRITESIZE)
@@ -331,3 +379,9 @@ class Level:
                 h = self.mhighlight[y][x]
                 if h:
                     window.blit(highlights[C.SPRITESIZE][h], pos)
+        
+        
+        
+        
+        
+                    
