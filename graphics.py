@@ -308,7 +308,7 @@ class Textures:
                 C.GROUND: ground}}
 
         def surfhigh(size, color, alpha):
-            surf = pygame.Surface((size, size))
+            surf = pygame.Surface((size*0.5, size*0.5))
             surf.set_alpha(alpha)
             surf.fill(color)  # green highlight
             return surf

@@ -159,10 +159,23 @@ class Level:
                 if mark[y][x]:
                     if self.map[y][x] == C.AIR:
                         self.map[y][x] = C.GROUND
-
+        
         # highlight on some tiles
         self.mhighlight = [[C.HOFF for x in range(
             self.width)] for y in range(self.height)]
+        
+        #
+        self.gms = GMC(self,self.player_position)
+        
+        # Pascal
+        self.aide2()
+#         x, y = self.player_position
+#         for d, (mx, my) in enumerate(C.DIRS):
+#             if x+mx >= 0 and x+mx < self.width and y+my >= 0 and y+my < self.height:
+#                 if self.map[y+my][x+mx] == C.GROUND:
+#                     self.mhighlight[y+my][x+mx] = C.HSELECT
+
+        
 
         # no previous move to cancel
         self.state_stack = []
@@ -234,7 +247,13 @@ class Level:
                     if (C.DIRS[C.UP] in CasesOcc) or (C.DIRS[C.DOWN] in CasesOcc):
                         if not (self.is_wall((x, y)) or self.map[y][x] == C.AIR):
                             self.mhighlight[y][x] = C.HERROR
-
+    
+    def aide2(self):
+        for y in range(self.height):
+            for x in range(self.width):
+                if ((y,x) in self.gms.grapheMC.keys()) and (not ((y,x) in self.gms.possibles)):
+                    self.mhighlight[y][x] = C.HERROR
+    
     def move_player(self, direction):
         """
         Update the internal state of the level after a player movement:
@@ -246,7 +265,7 @@ class Level:
         """
         x, y = self.player_position
         move_x, move_y = direction
-
+        
         # print ("trying to move", x,"x",y," in direction",direction)
 
         player_status = C.ST_IDLE
@@ -285,7 +304,15 @@ class Level:
         if player_status != C.ST_IDLE:
             self.num_moves += 1
 
-        self.aide()
+        # Pascal
+#         x, y = self.player_position
+#         for d, (mx, my) in enumerate(C.DIRS):
+#             if x+mx >= 0 and x+mx < self.width and y+my >= 0 and y+my < self.height:
+#                 if self.map[y+my][x+mx] == C.GROUND:
+#                     self.mhighlight[y+my][x+mx] = C.HATT
+        self.gms.update(self)
+        self.aide2()
+                
 
         return player_status
 
@@ -351,4 +378,6 @@ class Level:
 
                 h = self.mhighlight[y][x]
                 if h:
-                    window.blit(highlights[C.SPRITESIZE][h], pos)
+                    posh = (x * C.SPRITESIZE + C.SPRITESIZE//4, y * C.SPRITESIZE + C.SPRITESIZE//4)
+                    window.blit(highlights[C.SPRITESIZE][h], posh)
+
