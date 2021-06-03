@@ -51,29 +51,31 @@ class DFS:
 class GMC :
     """
     grapheMC des mouvements a priori possible quand une caisse est sur une case
+    cette classe ne tient jamais compte de la position du personnage
+    elle utilise seulement les postions des boites (après un éventuel update)
+    et la position des cibles
     """
     def __init__(self, level, pos):
         self.targets = [(y,x) for (x,y) in level.targets] # Où sont les cibles
         self.boxes = [(y,x) for (x,y) in level.boxes]
-        verbose("Targets : " + str(self.targets))
-        verbose("Boxes :" + str(self.boxes))
+        # verbose("Targets : " + str(self.targets))
+        # verbose("Boxes :" + str(self.boxes))
         self.level = level
         # On implémente le grapheMC sous la forme d'un dictionnaire de successeurs
         self.boxes = []
         self.grapheMC = {} # grapheMC est le grapheMC des mouvements possibles des caisses
         self.grapheMCinverse = {} # grapheMC est le grapheMC des provenances possibles des caisses
-        self.puits = [] # Liste pour accuillir les puits (les noeuds qui n'ont pas de successeurs dans le grapheMC
-        self.interdits = [] # Liste des noeuds qui ne comportent aucun chemin vers une cible
+        # self.puits = [] # Liste pour accuillir les puits (les noeuds qui n'ont pas de successeurs dans le grapheMC
+        # self.interdits = [] # Liste des noeuds qui ne comportent aucun chemin vers une cible
         dfs = DFS(self.level) # Appel pour trouver l'intérieur du jeu (case accessibles par le personnage)
         self.ground = dfs.search_floor(pos) # case accessibles par le personnage . True / False
         self.height = len(self.ground) # hauteur du plateau de jeu mur compris
         self.width = len(self.ground[0]) # largeur du plateau de jeu mur compris
         self.buildgrapheMC() # construction du grapheMC des mouvement possibles
-        # self.reduce() # Transforme le grapheMC complet en un grapheMC permis
         self.update(level)
-        self.possibles = set() # Contient les cases qui peuvent éventuellement
+        self.possibles = set() # Contient les cases qui peuvent éventuellement être à l'origine d'un chemin vers une cible
+        # La partie nocaisse pourrait être éventuellement supprimé
         self.nocaisse=[]
-        # verbose(self.grapheMCinverse)
         for k in self.targets :
             pass
             self.possibles = self.possibles.union(self.dfsInv(k)) # Appel d'un dfs sur le grapheMC inverse depuis la cible.
@@ -130,6 +132,10 @@ class GMC :
         return vus
     
     def update(self,level) :
+        """
+        Mets à jour les position des boites après un mouvement de caisse
+        A appeler dans le mouvement du perso level.move_player() dans les boites quand il pousse un boite -> player_status == 2
+        """
         self.level = level
         self.boxes = []
         for x in range(self.height):
@@ -137,7 +143,6 @@ class GMC :
                 pos = x,y
                 if self.level.has_box((y,x)):
                     self.boxes.append(pos)
-        # verbose('test' + str(self.boxes))
         self.nocaisse = []
         # verbose(self.boxes)
         for position in self.boxes :
@@ -148,6 +153,8 @@ class GMC :
         """
         Construis autour d'une caisse les positions interdites sous la forme
         d'un tableau de positions [(x,y),...]
+        Principe une caisse peut être bloquée  par une autre dans une composante (horizontale / verticale)
+        si elles passent toutes deux d'un degré deux hypotétiquement à un degré 0 
         """
         t = []
         if position in self.grapheMC.keys() :
@@ -162,6 +169,7 @@ class GMC :
         Quelles sont les position qui interdise le voisinage de deux caisses ?
         retourne un tableau t de quatre booléens pour Droite Gauche Bas Haut
         True = "ok", False = "interdit de mettre une autre caisse"
+        Appelé dans le level.aide() pour le renseignement des Highlight
         """
         # verbose("Autour de caisse : " + str(position))
         t = []
@@ -189,7 +197,7 @@ class GMC :
         """
         # Mur
         X Case depuis laquelle une caisse ne peut pas atteindre une cible
-        * Ne pas mettre d'autre caisse
+        * Ne pas mettre d'autre caisse (à noter : marquage ambigu dans le terminal)
         . target
         $ box
         """
@@ -215,110 +223,12 @@ class GMC :
                     str[y] = str[y][:x] + '*' + str[y][x+1:]
                 if (y,x) in self.boxes :
                     str[y] = str[y][:x] + '$' + str[y][x+1:]
-        
         s= ''
         for k in str :
             s += k + '\n'
         s += '\n'  
         return s
     
-    
-    """
-    def __repr__(self) :
-        str = []
-        for y in range(self.height):
-            str.append('')
-            for x in range(self.width):
-                str[y] += '#'
-        for y in range(self.height):
-            for x in range(self.width):
-                if (y,x) in self.grapheMC.keys() :
-                    str[y] = str[y][:x] + 'X' + str[y][x+1:]
-        for y in range(self.height):
-            for x in range(self.width):
-                if (y,x) in self.puits :
-                    str[y] = str[y][:x] + '+' + str[y][x+1:] 
-        for y in range(self.height):
-            for x in range(self.width):
-                if (y,x) in self.permitedgrapheMC.keys() :
-                    str[y] = str[y][:x] + ' ' + str[y][x+1:]
-        s= ''
-        for k in str :
-            s += k + '\n'
-        s += '\n'  
-        return s
-    """
-    
-    def search_target(self, source):
-        """
-        Renvoit True si une recherche DFS depuis la source rencontre une target
-        False sinon
-        """
-        init_x, init_y = source
-        # to remember which tiles have been visited or not
-        vus = []
-        
-        def rec(pos):
-            if pos not in vus :
-                vus.append(pos)
-            for p in self.grapheMC[(pos)] :
-                if p not in vus :
-                    rec(p)          
-        rec(source)
-        r = False
-        for k in vus :
-            if k in self.targets:
-             r = True
-        verbose("GMS.search_target : " + str(r) + " -> " + str(vus))
-        return r
-    
-    def reduce(self) :
-        def puits(g):
-                t = []
-                for k in g.keys() :
-                    if g[k] == set() and k not in self.targets :
-                        t.append(k)
-                return t
-        
-        self.permitedgrapheMC = copy.deepcopy(self.grapheMC) # permited grapheMC est le grapheMC des cases où on peut mettre la caisse sans être bloqué
-        p = puits(self.grapheMC)
-        self.puits = p
-        # verbose("nombre de puits (non cibles) dans le grapheMC de départ : " + str(len(p)))
-        # verbose("puits :" + str(p))
-        # suppression des puits :
-        def rec(p) :
-            while len(p) > 0 :
-                verbose("grapheMC permis : " + str(self.permitedgrapheMC))
-                # verbose("puits :" + str(p))
-                # verbose("suppression de " + str(len(p)) + " puits")
-                for k in p :
-                    self.permitedgrapheMC.pop(k) # suppression du puits
-                    self.interdits.append(k)
-                    for kk in self.permitedgrapheMC.keys() :
-                        if k in self.permitedgrapheMC[kk] :
-                            self.permitedgrapheMC[kk].remove(k)
-                p = puits(self.permitedgrapheMC)
-                verbose("puits :" + str(p))
-        rec(p)
-        verbose("grapheMC permis : " + str(self.permitedgrapheMC))
-        verbose("Puits :" + str(self.interdits))
-        for (x,y) in self.interdits :
-            for d, (my, mx) in enumerate(C.DIRS):
-                k = (x+mx,y+my)
-                if k in self.permitedgrapheMC :
-                    verbose(str(k))
-                    if not(self.search_target(k)) :
-                        self.permitedgrapheMC.pop(k) # suppression du puits
-                        self.interdits.append(k)
-                        for kk in self.permitedgrapheMC.keys() :
-                            if k in self.permitedgrapheMC[kk] :
-                                self.permitedgrapheMC[kk].remove(k)
-                                
-
-                        
-
-
-                         
         
             
         

@@ -12,6 +12,7 @@ import common as C
 from copy import deepcopy
 from explore import *
 from utils import *
+from exploreextend import *
 
 
 class Level:
