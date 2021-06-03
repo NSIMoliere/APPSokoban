@@ -310,9 +310,37 @@ class Textures:
             }
 
         def surfhigh(size, color, alpha):
-            surf = pygame.Surface((size*0.5,size*0.5))
+            surf = pygame.Surface((size,size))
             surf.set_alpha(alpha)
-            surf.fill(color)  # green highlight
+            surf.fill((180,180,180))
+            pot_surface = pygame.Rect(0.25*size, 0.25*size, 0.5*size, 0.5*size)
+            surf.fill(color,pot_surface)  # green highlight
+            return surf
+        
+        def surfhigh2(size, color, alpha, m ):
+            pass
+            surf = pygame.Surface((size,size))
+            surf.set_alpha(alpha)
+            surf.fill((180,180,180))
+            m = m - 10 
+            pot_surface = pygame.Rect(0.25*size, 0.25*size, 0.5*size, 0.5*size)
+            surf.fill(C.GREEN,pot_surface)  # green highlight
+            if m % 2 == 1 :
+                pot_surface = pygame.Rect(0.9*size, 0*size, 0.1*size, 1*size)
+                surf.fill(color,pot_surface)
+            m = m // 2
+            if m % 2 == 1 :
+                pot_surface = pygame.Rect(0*size, 0*size, 0.1*size, 1*size)
+                surf.fill(color,pot_surface)
+            m = m // 2
+            if m % 2 == 1 :
+                pot_surface = pygame.Rect(0*size, 0.9*size, 1*size, 0.1*size)
+                surf.fill(color,pot_surface)
+            m = m // 2
+            if m % 2 == 1 :
+                pot_surface = pygame.Rect(0*size, 0*size, 1*size, 0.1*size)
+                surf.fill(color,pot_surface)
+            m = m // 2
             return surf
 
         # small surfaces to draw attention to a particular tile of the board
@@ -324,16 +352,29 @@ class Textures:
         # yellow highlight, to show selection
         def surfSelect(s): return surfhigh(s, (255, 255, 0), 200)
         # red highlight, in case of an error
-        def surfError(s): return surfhigh(s, (255, 0, 0), 200)
-
+        def surfError(s): return surfhigh(s, (255, 0, 0),175)
+        # redgreen highlight, in case of an error
+        def surfCaisse(s,d): return surfhigh2(s, (255, 0, 0), 175, d)
+        
         self.highlights = {}
         for s in C.SPRITESIZES:
             self.highlights[s] = {
                 C.HATT:   surfAtt(s),
                 C.HSUCC:  surfSucc(s),
                 C.HSELECT: surfSelect(s),
-                C.HERROR: surfError(s)
+                C.HERROR : surfError(s),
+                C.HELP : surfError(s),
+                10 : surfCaisse(s,10),
+                11 : surfCaisse(s,11), 12 : surfCaisse(s,12),
+                13 : surfCaisse(s,10), 14 : surfCaisse(s,14),
+                15 : surfCaisse(s,15), 16 : surfCaisse(s,16),
+                17 : surfCaisse(s,17), 18 : surfCaisse(s,18),
+                19 : surfCaisse(s,19), 20 : surfCaisse(s,20),
+                21 : surfCaisse(s,21), 22 : surfCaisse(s,22),
+                23 : surfCaisse(s,22), 24 : surfCaisse(s,24),
+                25 : surfCaisse(s,25), 24 : surfCaisse(s,26)
             }
+       
 
 
     def get(self, size):

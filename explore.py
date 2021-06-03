@@ -72,6 +72,7 @@ class GMC :
         # self.reduce() # Transforme le grapheMC complet en un grapheMC permis
         self.update(level)
         self.possibles = set() # Contient les cases qui peuvent éventuellement
+        self.nocaisse=[]
         # verbose(self.grapheMCinverse)
         for k in self.targets :
             pass
@@ -137,11 +138,16 @@ class GMC :
                 if self.level.has_box((y,x)):
                     self.boxes.append(pos)
         # verbose('test' + str(self.boxes))
+        self.nocaisse = []
+        # verbose(self.boxes)
+        for position in self.boxes :
+            self.nocaisse += self.autourCaisse(position)
+            self.boolCaisse(position)
     
     def autourCaisse(self,position):
         """
-        Construis autour d'une caisse les positions interdites
-        retourne un tableau t de quatre booléens pour Haut Bas Gauche Droite
+        Construis autour d'une caisse les positions interdites sous la forme
+        d'un tableau de positions [(x,y),...]
         """
         t = []
         if position in self.grapheMC.keys() :
@@ -150,7 +156,33 @@ class GMC :
                     if len(self.grapheMC[s]) == 2 and position in self.grapheMC[s] :
                         t.append(s)
         return t
-        
+    
+    def boolCaisse(self,position):
+        """
+        Quelles sont les position qui interdise le voisinage de deux caisses ?
+        retourne un tableau t de quatre booléens pour Droite Gauche Bas Haut
+        True = "ok", False = "interdit de mettre une autre caisse"
+        """
+        # verbose("Autour de caisse : " + str(position))
+        t = []
+        tt = [True,True,True,True]
+        t = self.autourCaisse(position)
+        x,y = position
+        for p in t :
+            xx,yy = p
+            if xx == x :
+                if yy > y :
+                    tt[0] = False
+                else :
+                    tt[1] = False
+            if yy == y :
+                if xx > x :
+                    tt[2] = False
+                else :
+                    tt[3] = False
+        # verbose("Interdit Droite Gauche Bas Haut : " + str(tt))
+        return tt
+      
         
         
     def __repr__(self) :
@@ -177,14 +209,9 @@ class GMC :
                 if (y,x) in self.targets :
                     str[y] = str[y][:x] + '.' + str[y][x+1:]
         # Marquage Caisse
-        t = []
-        # verbose(self.boxes)
-        
-        for position in self.boxes :
-            t += self.autourCaisse(position)
         for y in range(self.height):
             for x in range(self.width):
-                if (y,x) in t :
+                if (y,x) in self.nocaisse :
                     str[y] = str[y][:x] + '*' + str[y][x+1:]
                 if (y,x) in self.boxes :
                     str[y] = str[y][:x] + '$' + str[y][x+1:]

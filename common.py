@@ -4,12 +4,13 @@ Common definitions for the whole project.
 
 
 # List of level packs available for in-game selection
+# Ajoutez ici un pack pour test /assets/levels/nomdupack.txt
 PACKS = [
       'Original.txt'
     , 'Minicosmos.txt'
     , 'Simple Sokoban.txt'
     , 'Tests.txt'
-
+    , 'Francois.txt'
     , 'Original_remixed.txt'
     , 'XSokoban.txt'
     , 'Pufiban.txt'
@@ -107,6 +108,7 @@ HATT  = 1
 HSUCC = 2
 HSELECT = 3
 HERROR  = 4
+HELP = 5
 
 
 # Time delays
