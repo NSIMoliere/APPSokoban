@@ -163,6 +163,7 @@ class Level:
         #
         self.gj = GrapheJeu(self)
         verbose("Fin :\n" + str(self.gj.success))
+        print(self.gj.solution)
         
         for y in range(self.height):
             for x in range(self.width):
@@ -298,10 +299,41 @@ class Level:
         for position in self.gms.boxes :
             t = self.gms.boolCaisse(position)
             x , y = position
-            self.mhighlight[x][y] = 10
+            self.mhighlight[y][x] = 10
             for i in range(4) :
-                self.mhighlight[x][y] += (1-t[i])*(2**i)   # 10 = 10 + (0b0000) // 11 = 10 + (0b0001) ...    
+                self.mhighlight[y][x] += (1-t[i])*(2**i)   # 10 = 10 + (0b0000) // 11 = 10 + (0b0001) ...    
 
+        self.bfs = BFS(self)
+        boxes = []
+        targets = []
+        for y in range(self.height):
+            for x in range(self.width):
+                if self.has_box((x, y)):
+                    boxes.append((x, y))
+                if self.is_target((x, y)):
+                    targets.append((x, y))
+
+        #ch = bfs.chemin(self.gj.solution[0][0], self.player_position)
+        mony, monx = self.gj.solution[0][0]
+        #print("Premier objectif : ", (monx, mony))
+        px, py = self.player_position
+        #print("Position du personnage : ", (px, py))
+        #print("Dictionnaire Parents : ", self.bfs.search_floor((px, py)))
+        ch = self.bfs.chemin((monx, mony), self.bfs.search_floor((px, py)))
+        #print("Chemin à suivre : ", ch)
+        for prochain in ch:
+            x, y = prochain
+            self.mhighlight[y][x] = C.HSELECT
+
+        for box in boxes:
+            #print("Positions des caisses : ", self.bfs.search_floor(box))
+            #print(targets[0])
+            ch = self.bfs.chemin(targets[0], self.bfs.search_floor(box))
+            #print("Déplacement de la caisse : ", ch)
+            if len(ch) > 1:
+                prochain = self.bfs.chemin(targets[0], self.bfs.search_floor(box))[1]
+                x, y = prochain
+                self.mhighlight[y][x] = C.HSUCC
     
     def move_player(self, direction):
         """

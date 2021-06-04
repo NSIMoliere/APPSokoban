@@ -686,12 +686,43 @@ class Game:
         print("Waiting for keypress...")
         self.wait_key()
 
+#     def test_move(self):
+#         """
+#         "automated" movement: pretend the user has pressed a direction key
+#         on the keyboard.
+#         Here we move up, right, down, then left
+#         """
+#         for m in [C.UP, C.RIGHT, C.DOWN, C.LEFT]: 
+#             key = DIRKEY[m]
+#             self.move_character(key)
+            
     def test_move(self):
         """
         "automated" movement: pretend the user has pressed a direction key
         on the keyboard.
         Here we move up, right, down, then left
         """
-        for m in [C.UP, C.RIGHT, C.DOWN, C.LEFT]: 
-            key = DIRKEY[m]
+        #ch = bfs.chemin(self.gj.solution[0][0], self.player_position)
+        mony, monx = self.level.gj.solution[0][0]
+        px, py = self.level.player_position
+        ch = self.level.bfs.chemin((monx, mony), self.level.bfs.search_floor((px, py)))
+        for prochain in ch[1:]:
+            x, y = prochain
+            px, py = self.level.player_position
+            dep = x-px, y-py
+            
+            print("Dep : ", dep)
+            print("C.DIRS : ", C.DIRS)
+            for i in range(len(C.DIRS)):
+                if dep == C.DIRS[i]:
+                    k = i
+            key = DIRKEY[k]
             self.move_character(key)
+#         
+        depy, depx = self.level.gj.solution[0][1]
+        print("pousse : ", depx, depy)
+        for i in range(len(C.DIRS)):
+            if (depx, depy) == C.DIRS[i]:
+                k = i
+        key = DIRKEY[k]
+        self.move_character(key)
