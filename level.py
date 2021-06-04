@@ -180,6 +180,9 @@ class Level:
         self.num_moves = 0
         self.loaded = True
         return True
+    
+    def solve(self) :
+        pass
 
     def reset_highlight(self):
         for y in range(self.height):
@@ -225,7 +228,7 @@ class Level:
 
     def push_state(self):
         self.state_stack.append(self.get_current_state())
-        verbose("dernier etat (Level.state_stack[-1]) : " + str(self.state_stack[-1]))
+        # verbose("dernier etat (Level.state_stack[-1]) : " + str(self.state_stack[-1]))
                
     def aide(self):
         """
@@ -303,7 +306,7 @@ class Level:
         # verbose("Renvoyé par Level.move_player() (0-bloque / 1-libre / 2-pousse)" + str(player_status))
         if player_status == 2 :
             self.gms.update(self)
-            verbose("GMC :\n" + str(self.gms))
+            # verbose("GMC :\n" + str(self.gms))
         
         self.aide()
         

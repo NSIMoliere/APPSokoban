@@ -14,6 +14,16 @@ from math import sqrt
 import copy
 from explore import *
 
+def verboseMbool(matrice) :
+    s = ''
+    for i in range(len(matrice)) :
+        for j in range(len(matrice[0])) :
+            if matrice[i][j] :
+                s = s + ' '
+            else :
+                s = s + 'X'
+        s += '\n'
+    verbose(s)
 
 class File() :
     def __init__(self) :
@@ -54,10 +64,15 @@ class Noeud() :
         
     def determineZone(self) :
         dfs = DFS(self.plateau.level)
-        mark = dfs.search_floor_boombox(self.zone)
+        mark2 = dfs.search_floor_boombox(self.zone,self.caisses)
+        verbose("search_boombox " + str(self.zone) + "\n" + "caisses : " + str(self.caisses) + "\n")
+        verboseMbool(mark2)
+        
         for x in range(self.plateau.width) :
             for y in range(self.plateau.height) :
-                if mark[y][x] == True :
+                if mark2[y][x] == True :
+                    verbose("zoneid : " + str((x,y)))
+                    verbose()
                     return x,y
     
     def __repr__(self) :
@@ -116,8 +131,10 @@ class Noeud() :
                     if prevposcaisse not in self and prevposchar not in self :
                         prevcaisses = self.caisses[:]
                         prevcaisses[i] = prevposcaisse
+                        # Tester si vraiment voisin :
                         voisin = Noeud(self.plateau,prevposchar,prevcaisses)
-                        voisins.append(voisin)
+                        if self.zone == voisin.determineZone() : # Attention ici, peut poser problème je pense pour x,y en haut à gauche
+                            voisins.append(voisin)
         return voisins
                                      
 
@@ -147,12 +164,12 @@ class GrapheJeu() :
         self.player_position = x,y
         self.boxes = [(y,x) for (x,y) in level.boxes]
         self.set_noeudGagne( Noeud( self.plateau , (x,y) , [(y,x) for (x,y) in level.targets] ) )
-        verbose(self.success)
+        # verbose(self.success)
         self.solve()
     
     def solve(self) :
         marked = self.BFS() 
-        verbose(marked)
+        verbose('BFS \n' +str(marked))
         c = 0
         noeud_courant = Noeud(self.plateau , self.player_position, self.boxes)
         verbose(noeud_courant.caisses)
@@ -189,7 +206,7 @@ class GrapheJeu() :
         marked = {}
         marked[n.footprint] = (d,n,None)
         # while (n = f.dequeue()) : Est-ce qu' il y a une syntaxe pour ça en python ?
-        verbose(f.isempty())
+        # verbose(f.isempty())
         while not f.isempty() :
             nc = f.dequeue()
             d = d + 1
