@@ -45,7 +45,90 @@ class DFS:
 
         rec_explore(source)
         return mark
+    
+    
+class File:
+    ''' classe File
+    création d'une instance File avec une liste
+    '''
+    def __init__(self):
+        self.L = []
+    
+    def vide(self):
+        return self.L == []
+    
+    def defiler(self):
+        assert not self.vide(), "file vide"
+        return self.L.pop(0)
+    
+    def enfiler(self, x):
+        self.L.append(x)
+    
+    def taille(self):
+        return len(self.L)
 
+    def sommet(self):
+        return self.L[0]
+
+    def present(self, x):
+        return x in self.L
+
+    
+class BFS:
+    """
+    Classical Breadth-First Search walkthrough of the level to discover what is 
+    the "interior" and "exterior.
+    """
+
+    def __init__(self, level):
+        self.level = level
+        
+        #f.enfiler(depart)
+        #parent[depart] = None
+
+    def voisins(self, pos):
+        v = []
+        x, y = pos
+        #g = GMC(self.level, (y, x))
+        for d, (mx, my) in enumerate(C.DIRS):
+            (ox, oy) = (-mx, -my)
+            #if x+mx >= 0 and x+mx < self.level.width and y+my >= 0 and y+my < self.level.height\
+               #and x+ox >= 0 and x+ox < self.level.width and y+oy >= 0 and y+oy < self.level.height:
+            
+            if not (self.level.is_wall((x+mx, y+my)) or self.level.has_box((x+mx, y+my))):\
+                   #and not (self.level.is_wall((x+ox, y+oy)) or self.level.has_box((x+ox, y+oy))):
+            #if (x+mx, y+my) in g.possibles:
+                v.append((x+mx, y+my))
+        return v
+
+    def search_floor(self, source):
+        parent = {}
+        sommet_visite = []
+        f = File()
+        f.enfiler(source)
+        parent[source] = None
+        
+        while not f.vide():
+            tmp = f.defiler()
+            
+            if tmp not in sommet_visite:
+                sommet_visite.append(tmp)
+                
+            for voisin in self.voisins(tmp):
+                
+                if voisin not in sommet_visite and not f.present(voisin):
+                    f.enfiler(voisin)
+                    parent[voisin] = tmp
+        
+        return parent
+
+    def chemin(self, end, parent):
+        chemin = []
+        courant = end
+        while courant != None and courant in parent.keys():
+            chemin = [courant] + chemin
+            courant = parent[courant]
+        return chemin
 
 class Aide:
     """

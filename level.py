@@ -168,13 +168,13 @@ class Level:
         self.gms = GMC(self,self.player_position)
         
         # Pascal
-        self.aide2()
+        self.aide()
 #         x, y = self.player_position
 #         for d, (mx, my) in enumerate(C.DIRS):
 #             if x+mx >= 0 and x+mx < self.width and y+my >= 0 and y+my < self.height:
 #                 if self.map[y+my][x+mx] == C.GROUND:
 #                     self.mhighlight[y+my][x+mx] = C.HSELECT
-
+        
         
 
         # no previous move to cancel
@@ -231,24 +231,26 @@ class Level:
 
     # Pascal
     def aide(self):
-        x, y = self.player_position
+        bfs = BFS(self)
+        boxes = []
+        targets = []
         for y in range(self.height):
             for x in range(self.width):
-                CasesOcc = []
-                for d, (mx, my) in enumerate(C.DIRS):
-                    if x+mx >= 0 and x+mx < self.width and y+my >= 0 and y+my < self.height:
-                        if not (self.is_empty((x+mx, y+my)) or self.has_box((x+mx, y+my))):
-                            CasesOcc.append(C.DIRS[d])
-                if (C.DIRS[C.UP] in CasesOcc) or (C.DIRS[C.DOWN] in CasesOcc):
-                    if (C.DIRS[C.LEFT] in CasesOcc) or (C.DIRS[C.RIGHT] in CasesOcc):
-                        if not (self.is_wall((x, y)) or self.map[y][x] == C.AIR):
-                            self.mhighlight[y][x] = C.HERROR
-                if (C.DIRS[C.LEFT] in CasesOcc) or (C.DIRS[C.RIGHT] in CasesOcc):
-                    if (C.DIRS[C.UP] in CasesOcc) or (C.DIRS[C.DOWN] in CasesOcc):
-                        if not (self.is_wall((x, y)) or self.map[y][x] == C.AIR):
-                            self.mhighlight[y][x] = C.HERROR
-    
-    def aide2(self):
+                if self.has_box((x, y)):
+                    boxes.append((x, y))
+                if self.is_target((x, y)):
+                    targets.append((x, y))
+
+        for box in boxes:
+            print(bfs.search_floor(box))
+            print(targets[0])
+            ch = bfs.chemin(targets[0], bfs.search_floor(box))
+            print(ch)
+            if len(ch) > 1:
+                prochain = bfs.chemin(targets[0], bfs.search_floor(box))[1]
+                x, y = prochain
+                self.mhighlight[y][x] = C.HSUCC
+        
         for y in range(self.height):
             for x in range(self.width):
                 if ((y,x) in self.gms.grapheMC.keys()) and (not ((y,x) in self.gms.possibles)):
@@ -311,7 +313,7 @@ class Level:
 #                 if self.map[y+my][x+mx] == C.GROUND:
 #                     self.mhighlight[y+my][x+mx] = C.HATT
         self.gms.update(self)
-        self.aide2()
+        self.aide()
                 
 
         return player_status
