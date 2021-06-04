@@ -22,7 +22,7 @@ class DFS:
     def __init__(self, level):
         self.level = level
 
-    def search_floor_boombox(self, source):
+    def search_floor_boombox(self, source, boxes):
         init_x, init_y = source
 
         # to remember which tiles have been visited or not
@@ -38,13 +38,12 @@ class DFS:
             mark[y][x] = True
 
             for d, (mx, my) in enumerate(C.DIRS):
-                if self.level.is_wall((x+mx, y+my)) or self.level.has_box((x+mx, y+my)):
+                if self.level.is_wall((x+mx, y+my)) or (y+my, x+mx) in boxes :
                     continue
-
                 rec_explore((x+mx, y+my))
 
         rec_explore(source)
-        verbose("DFS.search_floor : " + str(mark))
+        # verbose("DFS.search_floor : " + str(mark))
         return mark
 
     def search_floor(self, source):
@@ -69,7 +68,7 @@ class DFS:
                 rec_explore((x+mx, y+my))
 
         rec_explore(source)
-        verbose("DFS.search_floor : " + str(mark))
+        # verbose("DFS.search_floor : " + str(mark))
         return mark
     
     
@@ -143,7 +142,7 @@ class GMC :
         Exploration DFS du graphe inversé en partant du point de destination
         Renvoit Les cases éventuelles qui peuvent faire que la caisse se retrouve sur la destination
         """
-        verbose("dfs inverse depuis cible : " + str(destination))
+        # verbose("dfs inverse depuis cible : " + str(destination))
         vus = set()
         def rec(pos):
             if pos not in vus :
@@ -165,8 +164,8 @@ class GMC :
         self.boxes = []
         for x in range(self.height):
             for y in range(self.width):
-                pos = x,y
-                if self.level.has_box((y,x)):
+                pos = y,x
+                if self.level.has_box((x,y)):
                     self.boxes.append(pos)
         self.nocaisse = []
         # verbose(self.boxes)
