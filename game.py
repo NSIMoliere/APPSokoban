@@ -703,26 +703,29 @@ class Game:
         Here we move up, right, down, then left
         """
         #ch = bfs.chemin(self.gj.solution[0][0], self.player_position)
-        mony, monx = self.level.gj.solution[0][0]
-        px, py = self.level.player_position
-        ch = self.level.bfs.chemin((monx, mony), self.level.bfs.search_floor((px, py)))
-        for prochain in ch[1:]:
-            x, y = prochain
-            px, py = self.level.player_position
-            dep = x-px, y-py
+        for position in self.level.gj.solution:
             
-            print("Dep : ", dep)
-            print("C.DIRS : ", C.DIRS)
+            mony, monx = position[0]
+            px, py = self.level.player_position
+            ch = self.level.bfs.chemin((monx, mony), self.level.bfs.search_floor((px, py)))
+            if len(ch) > 1:
+                for prochain in ch[1:]:
+                    x, y = prochain
+                    px, py = self.level.player_position
+                    dep = x-px, y-py
+                    
+                    print("Dep : ", dep)
+                    print("C.DIRS : ", C.DIRS)
+                    for i in range(len(C.DIRS)):
+                        if dep == C.DIRS[i]:
+                            k = i
+                    key = DIRKEY[k]
+                    self.move_character(key)
+    #         
+            depy, depx = position[1]
+            #print("pousse : ", depx, depy)
             for i in range(len(C.DIRS)):
-                if dep == C.DIRS[i]:
+                if (depx, depy) == C.DIRS[i]:
                     k = i
             key = DIRKEY[k]
             self.move_character(key)
-#         
-        depy, depx = self.level.gj.solution[0][1]
-        print("pousse : ", depx, depy)
-        for i in range(len(C.DIRS)):
-            if (depx, depy) == C.DIRS[i]:
-                k = i
-        key = DIRKEY[k]
-        self.move_character(key)
