@@ -30,7 +30,6 @@ class Level:
         self.load_file()    # read whole file
         self.loaded = False  # True when a level is loaded
         self.pushed_box = None
-        
         # verbose("Graphe Mouvement Caisse :" + str(gmc.grapheMC))
 
     def place_box(self, box):
@@ -179,10 +178,62 @@ class Level:
         self.state_stack = []
         self.num_moves = 0
         self.loaded = True
+        
+        
+        
         return True
     
     def solve(self) :
         pass
+    
+    def moveplayerto(self,pos) :
+        dest = pos
+        orig = self.player_position
+        verbose(orig)
+        f = File()
+        f.enqueue(dest)
+        marked = {}
+        marked[dest] = (None,None)
+        # while (n = f.dequeue()) : Est-ce qu' il y a une syntaxe pour ça en python ?
+        # verbose(f.isempty())
+        while not f.isempty() :
+            pc = f.dequeue()
+            x,y = pc
+            for d, (mx, my) in enumerate(C.DIRS):
+                if not self.is_wall((y+my,x+mx)) and not self.has_box((y+my,x+mx))  :
+                    np = pc
+                    verbose(pc)
+                    nc = (y+my,x+mx)
+                    if nc not in marked.keys() :
+                        marked[nc] = (d,np)
+                        f.enqueue(nc)
+                    
+        chemin = []
+        verbose(marked)
+        
+        nc = orig 
+        while marked[nc] is not (None,None) :
+            chemin.append(marked[nc][0])
+            nc = marked[nc][1]
+        for m in chemin :
+            key = DIRKEY[m]
+            self.game.move_character(m)
+        
+        
+    def move(self,t):
+        """
+        "automated" movement: pretend the user has pressed a direction key
+        on the keyboard.
+        Here we move up, right, down, then left
+        """
+        for m in t :
+            key = DIRKEY[m]
+            self.game.move_character(key)
+                    
+        return marked
+        for m in [C.UP, C.RIGHT, C.DOWN, C.LEFT]:
+            key = DIRKEY[m]
+            self.move_character(key)
 
     def reset_highlight(self):
         for y in range(self.height):

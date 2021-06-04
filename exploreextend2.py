@@ -13,22 +13,7 @@ from time import time
 from math import sqrt
 import copy
 from explore import *
-import operator
 
-def verboseMbool(matrice) :
-    """
-    Une matrice de Booléen sous forme de X pour False
-    Ne sert que pour l'affichage dans le terminal
-    """
-    s = ''
-    for i in range(len(matrice)) :
-        for j in range(len(matrice[0])) :
-            if matrice[i][j] :
-                s = s + ' '
-            else :
-                s = s + 'X'
-        s += '\n'
-    verbose(s)
 
 class File() :
     def __init__(self) :
@@ -43,7 +28,7 @@ class File() :
             self.t = self.t[1:]
             return r
         else :
-            return False
+            return false
     
     def __contains__(self,x) :
         return x in self.t
@@ -54,48 +39,42 @@ class File() :
         return True
 
 class Noeud() :
-    def __init__(self , plateau , pos, positions = []  ) :
+    def __init__(self , plateau, pos, positions = []  ) :
         """
-        plateau : objet Plateau
-        plateau.cases : tableau de couples (x,y) des positions possibles sur le plateau de jeu
         positions : tableau de couples (x,y) des positions des caisses
-        pos : position du perso
         """
         self.caisses = positions
         self.niveau = 0
         self.index = -1
         self.plateau = plateau
         self.zone = pos
-        self.zone = self.determineZone() # Renvoit les coordonées de la première case en haut
+        self.zone = self.determineZone()
         self.footprint = int(self.__hash__())
         
     def determineZone(self) :
-        """
-
-        """
         dfs = DFS(self.plateau.level)
-        mark2 = dfs.search_floor_boombox(self.zone,self.caisses)
-        verbose("search_boombox " + str(self.zone) + "\n" + "caisses : " + str(self.caisses) + "\n")
-        verboseMbool(mark2)
-        
+        mark = dfs.search_floor_boombox(self.zone)
         for x in range(self.plateau.width) :
             for y in range(self.plateau.height) :
-                if mark2[y][x] == True :
-                    verbose("zoneid : " + str((x,y)))
-                    verbose()
+                if mark[y][x] == True :
                     return x,y
-    
-    def __repr__(self) :
-        s = "[[. " + str(self.caisses) + " / >> " + str(self.zone) + " <<  .]]"
-        return s
+                
         
     def __eq__(self, other):
-        if self.footprint() == other.footprint() :
-            return True
+        for p in self :
+            if p not in other :
+                return False
+        if self.zone != other.zone :
+            return False
+        return True
     
     def __ne__(self, other):
-        if self.footprint() != other.footprint() :
+        for p in self :
+            if p not in other :
+                return True
+        if self.zone != other.zone :
             return True
+        return True
     
     def __hash__(self):
         # classer les positions des caisses dans l'ordre croissant, dans un tuple de bonne longueur
@@ -105,7 +84,13 @@ class Noeud() :
             a = (a,p)
         a = (a , self.zone)
         return hash(a)
-  
+        
+    
+    def __repr__(self) :
+        s = "[[. " + str(self.caisses) + " / >> " + str(self.zone) + " <<  .]]"
+        return s
+        
+        
     def ajoutecaisse(self,position) :
         """
         ajoute une position (couple (x,y))de caisse à la fois
@@ -141,12 +126,11 @@ class Noeud() :
                     if prevposcaisse not in self and prevposchar not in self :
                         prevcaisses = self.caisses[:]
                         prevcaisses[i] = prevposcaisse
-                        # Tester si vraiment voisin :
                         voisin = Noeud(self.plateau,prevposchar,prevcaisses)
-                        if self.zone == voisin.determineZone() : # Attention ici, peut poser problème je pense pour x,y en haut à gauche
-                            voisins.append(voisin)
+                        voisins.append(voisin)
         return voisins
-                                     
+                        
+                       
 
 class Arc() :
     def __init__(self,posToPush) :
@@ -174,46 +158,24 @@ class GrapheJeu() :
         self.player_position = x,y
         self.boxes = [(y,x) for (x,y) in level.boxes]
         self.set_noeudGagne( Noeud( self.plateau , (x,y) , [(y,x) for (x,y) in level.targets] ) )
-        # verbose(self.success)
-        self.solution = []
+        verbose(self.success)
         self.solve()
-        verbose(self.solution)
     
     def solve(self) :
         marked = self.BFS() 
-        verbose('BFS \n' +str(marked))
-        mvt = 0
-        noeud_courant = Noeud(self.plateau , self.player_position, self.boxes)
-        verbose(noeud_courant.caisses)
-        # verbose(marked[noeud_courant.footprint])
+        verbose(marked)
+        c = 0
+        noeud_courant = Noeud( self.plateau , self.player_position, self.boxes)
+        verbose(noeud_courant)
+        verbose(marked[noeud_courant.footprint])
         if noeud_courant.footprint in marked.keys() :
             verbose("Il y a une solution")
-            # verbose(marked[noeud_courant.footprint])
-            while noeud_courant.footprint in marked.keys() and mvt < 100:
-                prevCaisses = noeud_courant.caisses
+            verbose(marked[noeud_courant.footprint])
+            while noeud_courant.footprint in marked.keys() and c < 100:
                 noeud_courant = marked[noeud_courant.footprint][2]
-                if noeud_courant is not None :
-                    for c in prevCaisses :
-                        if c not in noeud_courant.caisses :
-                            o = c
-                    for c in noeud_courant.caisses :
-                        if c not in prevCaisses :
-                            d = c
-                    m = tuple(map(operator.sub, d, o))
-                    pd = tuple(map(operator.sub, (0,0), m))
-                    pd = tuple(map(operator.sub, o, m))
-                    """
-                    if m == (0,1) : m = C.RIGHT
-                    if m == (0,-1) : m = C.LEFT
-                    if m == (1,0) : m = C.DOWN
-                    if m == (-1,0) : m = C.UP
-                    """
-                    verbose(str(pd) + " " + str(m))
-                    self.solution.append((pd,m))
-                    # verbose(marked[noeud_courant.footprint])
-                else :
-                    break
-                mvt =  mvt + 1
+                verbose(noeud_courant)
+                verbose(marked[noeud_courant.footprint])
+                c= c+1
                 
                 
     
@@ -235,7 +197,7 @@ class GrapheJeu() :
         marked = {}
         marked[n.footprint] = (d,n,None)
         # while (n = f.dequeue()) : Est-ce qu' il y a une syntaxe pour ça en python ?
-        # verbose(f.isempty())
+        verbose(f.isempty())
         while not f.isempty() :
             nc = f.dequeue()
             d = d + 1

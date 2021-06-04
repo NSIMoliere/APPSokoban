@@ -38,8 +38,9 @@ class DFS:
             mark[y][x] = True
 
             for d, (mx, my) in enumerate(C.DIRS):
-                if self.level.is_wall((x+mx, y+my)) or (y+my, x+mx) in boxes :
+                if self.level.is_wall((x+mx, y+my)) or (x+mx, y+my) in boxes :
                     continue
+
                 rec_explore((x+mx, y+my))
 
         rec_explore(source)
@@ -162,9 +163,9 @@ class GMC :
         """
         self.level = level
         self.boxes = []
-        for x in range(self.height):
-            for y in range(self.width):
-                pos = y,x
+        for y in range(self.width):
+            for x in range(self.height):
+                pos = x,y
                 if self.level.has_box((x,y)):
                     self.boxes.append(pos)
         self.nocaisse = []

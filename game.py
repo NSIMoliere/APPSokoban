@@ -304,6 +304,7 @@ class Game:
 
     def __init__(self, window, continueGame=True):
         self.window = window
+        verbose("Affichage dans : " + str(window))
         self.character = None
         self.interface = None
         self.level = Level(
@@ -691,6 +692,6 @@ class Game:
         on the keyboard.
         Here we move up, right, down, then left
         """
-        for m in [C.UP, C.RIGHT, C.DOWN, C.LEFT]:
+        for m in [C.UP, C.RIGHT, C.DOWN, C.LEFT]: 
             key = DIRKEY[m]
             self.move_character(key)

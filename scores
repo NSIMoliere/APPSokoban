@@ -1,0 +1,54 @@
+{
+    "current": "Minicosmos.txt",
+    "Original.txt": {
+        "last_level": 2,
+        "levels": [
+            null,
+            274,
+            666
+        ]
+    },
+    "Tests.txt": {
+        "last_level": 8,
+        "levels": [
+            null,
+            25,
+            null,
+            null,
+            null,
+            23,
+            33,
+            51,
+            91
+        ]
+    },
+    "Minicosmos.txt": {
+        "last_level": 2,
+        "levels": [
+            null,
+            37,
+            68
+        ]
+    },
+    "Francois.txt": {
+        "last_level": 7,
+        "levels": [
+            null,
+            3,
+            null,
+            1,
+            null,
+            null,
+            null,
+            8
+        ]
+    },
+    "Simple Sokoban.txt": {
+        "last_level": 0,
+        "levels": []
+    },
+    "microban.txt": {
+        "last_level": 0,
+        "levels": []
+    }
+}
