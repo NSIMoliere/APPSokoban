@@ -161,6 +161,10 @@ class Level:
         #
         self.gms = GMC(self,self.player_position)
         
+        #
+        self.gj = GrapheJeu(self)
+        verbose("Fin :\n" + str(self.gj.success))
+        
         for y in range(self.height):
             for x in range(self.width):
                 if mark[y][x]:
