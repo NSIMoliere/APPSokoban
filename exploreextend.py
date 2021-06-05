@@ -14,44 +14,7 @@ from math import sqrt
 import copy
 from explore import *
 import operator
-
-def verboseMbool(matrice) :
-    """
-    Une matrice de Booléen sous forme de X pour False
-    Ne sert que pour l'affichage dans le terminal
-    """
-    s = ''
-    for i in range(len(matrice)) :
-        for j in range(len(matrice[0])) :
-            if matrice[i][j] :
-                s = s + ' '
-            else :
-                s = s + 'X'
-        s += '\n'
-    verbose(s)
-
-class File() :
-    def __init__(self) :
-        self.t = []
-        
-    def enqueue(self,x) :
-        self.t.append(x)
-        
-    def dequeue(self) :
-        if len(self.t) > 0 :
-            r = self.t[0]
-            self.t = self.t[1:]
-            return r
-        else :
-            return False
-    
-    def __contains__(self,x) :
-        return x in self.t
-    
-    def isempty(self):
-        if len(self.t)>0 :
-            return False
-        return True
+from complements import *
 
 class Noeud() :
     def __init__(self , plateau , pos, positions = []  ) :
@@ -61,34 +24,40 @@ class Noeud() :
         positions : tableau de couples (x,y) des positions des caisses
         pos : position du perso
         """
-        self.caisses = positions
+        self.caisses = positions 
         self.niveau = 0
         self.index = -1
         self.plateau = plateau
-        self.zone = pos
-        self.zone = self.determineZone() # Renvoit les coordonées de la première case en haut
+        self.determineZone(pos) 
         self.footprint = int(self.__hash__())
         
-    def determineZone(self) :
+    def determineZone(self,pos) :
         """
-
+        Dans un plateau comportant des caisses
+        Renvoit le décimal correspondant au nombre binaire :
+        00000000 00111100 01111110 ... ou chaque ligen correpond aux acses accessible depuis
+        depuis la position 
         """
-        dfs = DFS(self.plateau.level)
-        mark2 = dfs.search_floor_boombox(self.zone,self.caisses)
-        verbose("search_boombox " + str(self.zone) + "\n" + "caisses : " + str(self.caisses) + "\n")
-        verboseMbool(mark2)
-        
+        dfs = DFS( self.plateau.level )
+        mark2 = dfs.search_floor_boombox( pos , self.caisses )
+        # verbose("search_boombox " + str(self.zone) + "\n" + "caisses : " + str(self.caisses) + "\n")
+        # verboseMbool(mark2)
+        s = '0b'
         for x in range(self.plateau.width) :
             for y in range(self.plateau.height) :
                 if mark2[y][x] == True :
-                    verbose("zoneid : " + str((x,y)))
-                    verbose()
-                    return x,y
+                    s += '1'
+                else :
+                    s += '0'  
+        self.zonebintodec = int(s,2)
+        self.zone = mark2
     
     def __repr__(self) :
         s = "[[. " + str(self.caisses) + " / >> " + str(self.zone) + " <<  .]]"
         return s
         
+    # Les classes suivantes permettent de 
+    # tester l'égalité de deux noeuds / non egalité / Savoir si deux noeuds sont les mêmes ...
     def __eq__(self, other):
         if self.footprint() == other.footprint() :
             return True
@@ -98,24 +67,30 @@ class Noeud() :
             return True
     
     def __hash__(self):
-        # classer les positions des caisses dans l'ordre croissant, dans un tuple de bonne longueur
+        # Renvoit un entier unique qui caractèrise le noeud
+        # (..(((0,(xb1,yb1)),(xb2,yb2)),(xb3,yb3))..,(xz,yz)
+        # Où b1,b2,b3 sont les positions des boites
+        # Et z est la zone où se trouve le joueur
         self.caisses.sort()
         a = 0
         for p in self :
             a = (a,p)
-        a = (a , self.zone)
+        a = (a , self.zonebintodec)
         return hash(a)
   
     def ajoutecaisse(self,position) :
         """
         ajoute une position (couple (x,y))de caisse à la fois
+        Inutile
         """
         self.caisses.append(position)
         
     def nbcaisses(self) :
+        # Je crois qu'on s'en serrt pas, à tester.
         return len(self.caisses)
     
-    # Les deux méthodes suivantes pour permettre de lopper sur les caisses du Noeud :
+    # Les deux méthodes suivantes pour permettre de looper sur les caisses du Noeud :
+    # Style for c in n où n est un noeud
     def __next__(self) :
         self.index += 1
         if self.index >= len(self.caisses) :
@@ -129,25 +104,46 @@ class Noeud() :
     def __contains__(self,position) :
         return position in self.caisses
     
-    def voisins(self,plateau) :
-        mvts = [(-1,0),(+1,0),(0,-1),(0,+1)]
-        voisins = []
-        for dpos in mvts :
+    # La méthode suivante permet de renvoyer les predecesseurs d'un noeud
+    # Une seule caisse a bougé
+    def predecesseurs(self,plateau) :
+        """
+        Renvoit un tableau contenant les noeuds predecesseurs dans le graphe
+        """
+        mvts = [(-1,0),(+1,0),(0,-1),(0,+1)] # Mouvements possibles
+        predecesseurs = []
+        # Pour chacun des mouvements
+        for dpos in mvts : 
+            # Pour chacune des caisses : 
             for i in range(self.nbcaisses()) :
                 pos = self.caisses[i]
-                prevposcaisse = tuple(map(sum, zip(pos,dpos))) 
-                prevposchar = tuple(map(sum, zip(pos,dpos,dpos)))
-                if prevposcaisse in plateau.cases and prevposchar in plateau.cases :
-                    if prevposcaisse not in self and prevposchar not in self :
+                #######
+                ### ###
+                ### ###
+                #  $  # Ici la caisse a quatre prédécesseurs possibles
+                ### ###
+                ### ###
+                #######
+                
+                prevposcaisse = tuple(map(sum, zip(pos,dpos)))
+                prevposperso = tuple(map(sum, zip(pos,dpos,dpos)))
+                xp,yp = prevposperso
+                xc,yc = prevposcaisse
+                # print("Tous predecesseurs :",prevposperso,prevposcaisse);
+                
+                if plateau.ground[yp][xp] and plateau.ground[yc][xc] and prevposcaisse not in self :
+                        print("Predecesseurs :",prevposperso,prevposcaisse);print()
+                        
                         prevcaisses = self.caisses[:]
                         prevcaisses[i] = prevposcaisse
-                        # Tester si vraiment voisin :
-                        voisin = Noeud(self.plateau,prevposchar,prevcaisses)
-                        if self.zone == voisin.determineZone() : # Attention ici, peut poser problème je pense pour x,y en haut à gauche
-                            voisins.append(voisin)
-        return voisins
-                                     
-
+                        predecesseur = Noeud(self.plateau,prevposperso,prevcaisses)
+                        if andMbool(self.zone,predecesseur.zone)[yp][xp] :
+                            predecesseurs.append(predecesseur) # Le mouvement a pu se faire
+                        
+        return predecesseurs
+                                    
+"""
+Cette classe ne sert à rien
 class Arc() :
     def __init__(self,posToPush) :
         self.posToPush = posToPush
@@ -164,27 +160,44 @@ class Arc() :
         A = Arc(self.posToPush)
         A.posFrom = self.posFrom
         return A
-    
+"""   
     
 class GrapheJeu() :
+    """
+    Le graphe des positions possibles du jeu
+    """
     def __init__(self,level) :
-        self.Pred = {}
-        self.plateau = Plateau(level)
-        y,x = level.player_position
-        self.player_position = x,y
-        self.boxes = [(y,x) for (x,y) in level.boxes]
-        self.set_noeudGagne( Noeud( self.plateau , (x,y) , [(y,x) for (x,y) in level.targets] ) )
-        # verbose(self.success)
-        self.solution = []
+        self.Pred = {} # Dictionnaire des prédecesseurs
+        self.plateau = Plateau(level) 
+        self.player_position = level.player_position
+        self.boxes = level.boxes
+        # Le noeud où le jeu est gagnant (Attention il peut y avoir plusieurs noeuds gagnants)
+        self.solution = [] # Tableau où la solution est rangée
+        self.success = Noeud( self.plateau , self.player_position , level.targets )
+        # self.success = Noeud( self.plateau , (6,5) , level.targets )
+        self.startpp = self.plateau.cases
+        for p in level.boxes :
+            self.startpp.remove(p)
+        pos = self.startpp.pop()
+        
         self.solve()
-        verbose(self.solution)
+       
+        while len(self.startpp)>0 and not(self.solve()) :
+            self.success = Noeud( self.plateau , pos , level.targets )
+            pos = self.startpp.pop()
+        
+        #   self.success = Noeud( self.plateau , (x,y) , level.targets )
+        
+        for s in self.solution : print(s)
     
     def solve(self) :
-        marked = self.BFS() 
-        verbose('BFS \n' +str(marked))
+        """
+        Reconstruis le trajet depuis le BFS du graphe
+        """
+        marked = self.BFS()
+        print(marked)
         mvt = 0
         noeud_courant = Noeud(self.plateau , self.player_position, self.boxes)
-        verbose(noeud_courant.caisses)
         # verbose(marked[noeud_courant.footprint])
         if noeud_courant.footprint in marked.keys() :
             verbose("Il y a une solution")
@@ -202,31 +215,29 @@ class GrapheJeu() :
                     m = tuple(map(operator.sub, d, o))
                     pd = tuple(map(operator.sub, (0,0), m))
                     pd = tuple(map(operator.sub, o, m))
-                    """
-                    if m == (0,1) : m = C.RIGHT
-                    if m == (0,-1) : m = C.LEFT
-                    if m == (1,0) : m = C.DOWN
-                    if m == (-1,0) : m = C.UP
-                    """
+                  
+                    if m == (0,-1) : m = C.UP #0
+                    if m == (0,1) : m = C.DOWN #1
+                    if m == (-1,0) : m = C.LEFT #2
+                    if m == (1,0) : m = C.RIGHT #3
+                    
                     verbose(str(pd) + " " + str(m))
                     self.solution.append((pd,m))
                     # verbose(marked[noeud_courant.footprint])
                 else :
                     break
                 mvt =  mvt + 1
-                
-                
-    
-    def set_noeudGagne(self,S) :
-        """
-        S est le Noeud où le niveau est gagné
-        """
-        self.success = S
-    
+            return True
+        else :
+            print("pas de solution")
+            return False
+   
+            
     
     def BFS(self) :
         """
         Exploration BFS du graphe (en même temps que sa construction !)
+        Retourne un tableau de prédecesseurs
         """
         n = self.success
         d = 0
@@ -234,12 +245,10 @@ class GrapheJeu() :
         f.enqueue(n)
         marked = {}
         marked[n.footprint] = (d,n,None)
-        # while (n = f.dequeue()) : Est-ce qu' il y a une syntaxe pour ça en python ?
-        # verbose(f.isempty())
         while not f.isempty() :
             nc = f.dequeue()
             d = d + 1
-            for v in nc.voisins(self.plateau) :
+            for v in nc.predecesseurs(self.plateau) :
                 verbose(v)
                 if v.footprint not in marked.keys() : # Ici il faudrait voir à normaliser la clé
                     f.enqueue(v)
@@ -254,15 +263,16 @@ class Plateau() :
     """
     def __init__(self,level) :
         self.level = level
-        self.cases = []
+        self.cases = [] # Ensembles des cases vides sous forme de liste de couples (x,y)
         dfs = DFS(self.level) # Appel pour trouver l'intérieur du jeu (case accessibles par le personnage)
         self.ground = dfs.search_floor(level.player_position) # case accessibles par le personnage . True / False
         self.height = len(self.ground) # hauteur du plateau de jeu mur compris
         self.width = len(self.ground[0]) # largeur du plateau de jeu mur compris
-        for y in range(self.height):
-            for x in range(self.width):
+        for x in range(self.width):
+            for y in range(self.height):
                 if self.ground[y][x]:
-                    self.cases.append((y,x))
+                    self.cases.append((x,y))
+        print(self.cases)
 
     
 def main() :

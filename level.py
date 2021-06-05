@@ -13,6 +13,8 @@ from copy import deepcopy
 from explore import *
 from utils import *
 from exploreextend import *
+from graphemovecaisse import *
+from complements import *
 
 
 class Level:
@@ -30,7 +32,6 @@ class Level:
         self.load_file()    # read whole file
         self.loaded = False  # True when a level is loaded
         self.pushed_box = None
-        # verbose("Graphe Mouvement Caisse :" + str(gmc.grapheMC))
 
     def place_box(self, box):
         x, y = box
@@ -157,13 +158,12 @@ class Level:
         dfs = DFS(self)
         mark = dfs.search_floor(self.player_position)
         
-        #
+        ##########################################################
         self.gms = GMC(self,self.player_position)
         
-        #
+        ##########################################################
         self.gj = GrapheJeu(self)
-        verbose("Fin :\n" + str(self.gj.success))
-        print(self.gj.solution)
+        # verbose("Fin :\n" + str(self.gj.success))
         
         for y in range(self.height):
             for x in range(self.width):
@@ -179,62 +179,9 @@ class Level:
         self.state_stack = []
         self.num_moves = 0
         self.loaded = True
-        
-        
-        
+
         return True
-    
-    def solve(self) :
-        pass
-    
-    def moveplayerto(self,pos) :
-        dest = pos
-        orig = self.player_position
-        verbose(orig)
-        f = File()
-        f.enqueue(dest)
-        marked = {}
-        marked[dest] = (None,None)
-        # while (n = f.dequeue()) : Est-ce qu' il y a une syntaxe pour ça en python ?
-        # verbose(f.isempty())
-        while not f.isempty() :
-            pc = f.dequeue()
-            x,y = pc
-            for d, (mx, my) in enumerate(C.DIRS):
-                if not self.is_wall((y+my,x+mx)) and not self.has_box((y+my,x+mx))  :
-                    np = pc
-                    verbose(pc)
-                    nc = (y+my,x+mx)
-                    if nc not in marked.keys() :
-                        marked[nc] = (d,np)
-                        f.enqueue(nc)
-                    
-        chemin = []
-        verbose(marked)
-        
-        nc = orig 
-        while marked[nc] is not (None,None) :
-            chemin.append(marked[nc][0])
-            nc = marked[nc][1]
-        for m in chemin :
-            key = DIRKEY[m]
-            self.game.move_character(m)
-        
-        
-    def move(self,t):
-        """
-        "automated" movement: pretend the user has pressed a direction key
-        on the keyboard.
-        Here we move up, right, down, then left
-        """
-        for m in t :
-            key = DIRKEY[m]
-            self.game.move_character(key)
-                    
-        return marked
-        for m in [C.UP, C.RIGHT, C.DOWN, C.LEFT]:
-            key = DIRKEY[m]
-            self.move_character(key)
+            
 
     def reset_highlight(self):
         for y in range(self.height):
@@ -281,7 +228,28 @@ class Level:
     def push_state(self):
         self.state_stack.append(self.get_current_state())
         # verbose("dernier etat (Level.state_stack[-1]) : " + str(self.state_stack[-1]))
-               
+     
+    """
+    def aide(self):  
+        #positionne le highlight C.HELP sur les case interdites pour une caisse
+        #positionne le highlight dans un intervalle 10..26 sur chaque caisse :
+        #                     DGBH . Interdits de mettre une caisse à Droite / Gauche / en Bas / Haut
+        #10 = 10 + 0 = 10 + 0b0000
+        #11 = 10 + 1 = 10 + 0b0001
+        #12 = 10 + 2 = 10 + 0b0010
+        #...
+        for y in range(self.height):
+            for x in range(self.width):
+                if (x,y) in self.gms.grapheMC.keys() and (x,y) not in self.gms.possibles :
+                    self.mhighlight[y][x] = C.HELP           
+        for position in self.gms.boxes :
+            t = self.gms.boolCaisse(position)
+            x , y = position
+            self.mhighlight[y][x] = 10
+            for i in range(4) :
+                self.mhighlight[y][x] += (1-t[i])*(2**i)   # 10 = 10 + (0b0000) // 11 = 10 + (0b0001) ...    
+    """
+    
     def aide(self):
         """
         positionne le highlight C.HELP sur les case interdites pour une caisse
@@ -292,17 +260,19 @@ class Level:
         12 = 10 + 2 = 10 + 0b0010
         ...
         """
+        
         for y in range(self.height):
             for x in range(self.width):
                 if (x,y) in self.gms.grapheMC.keys() and (x,y) not in self.gms.possibles :
-                    self.mhighlight[x][y] = C.HELP           
+                    self.mhighlight[y][x] = C.HELP           
         for position in self.gms.boxes :
             t = self.gms.boolCaisse(position)
             x , y = position
             self.mhighlight[y][x] = 10
             for i in range(4) :
                 self.mhighlight[y][x] += (1-t[i])*(2**i)   # 10 = 10 + (0b0000) // 11 = 10 + (0b0001) ...    
-
+        
+        # print("ok pour T")
         self.bfs = BFS(self)
         boxes = []
         targets = []
@@ -313,8 +283,9 @@ class Level:
                 if self.is_target((x, y)):
                     targets.append((x, y))
 
+        """
         #ch = bfs.chemin(self.gj.solution[0][0], self.player_position)
-        mony, monx = self.gj.solution[0][0]
+        monx, mony = self.gj.solution[0][0]
         #print("Premier objectif : ", (monx, mony))
         px, py = self.player_position
         #print("Position du personnage : ", (px, py))
@@ -334,6 +305,8 @@ class Level:
                 prochain = self.bfs.chemin(targets[0], self.bfs.search_floor(box))[1]
                 x, y = prochain
                 self.mhighlight[y][x] = C.HSUCC
+        """
+    
     
     def move_player(self, direction):
         """
@@ -391,8 +364,9 @@ class Level:
             self.gms.update(self)
             # verbose("GMC :\n" + str(self.gms))
         
+        ########################################################################
         self.aide()
-        
+        ########################################################################
         return player_status
 
     def hide_pushed_box(self):
@@ -402,7 +376,6 @@ class Level:
     def show_pushed_box(self):
         x, y = self.pushed_box
         self.mboxes[y][x] = True
-
 
 
     def update_box_positions(self):
