@@ -304,6 +304,7 @@ class Game:
 
     def __init__(self, window, continueGame=True):
         self.window = window
+        verbose("Affichage dans : " + str(window))
         self.character = None
         self.interface = None
         self.level = Level(
@@ -322,11 +323,14 @@ class Game:
         self.has_changed = False
         self.selected_position = None
         self.origin_board = (0, 0)
+        self.i = 0
 
     def load_next(self):
+        self.i = 0
         self.load_level(nextLevel=True)
 
     def load_prev(self):
+        self.i = 0
         self.load_level(prevLevel=True)
 
     def load_level(self, nextLevel=False, prevLevel=False):
@@ -334,6 +338,8 @@ class Game:
         load (or reload) current level or previous/next level
         Return True on success and False if it was not possible to load a level.
         """
+        print("test")
+        self.i = 0
         if nextLevel:
             S.scores.index_level += 1
         if prevLevel:
@@ -677,20 +683,52 @@ class Game:
         self.update_screen(flip=False)
         self.interface.show_win(self.window, S.scores.index_level)
         self.wait_key(update=False)
-
         self.load_level(nextLevel=True)
 
     def debug(self):
         self.update_screen()
         print("Waiting for keypress...")
         self.wait_key()
-
+        
     def test_move(self):
+        lensol = len(self.level.gj.solution)
+        for i in range(lensol) :
+            #self.test_move_i(i)
+            self.test_move_i(self.i)
+            self.i += 1
+        
+
+    def test_move_i(self,i):
         """
         "automated" movement: pretend the user has pressed a direction key
         on the keyboard.
         Here we move up, right, down, then left
         """
-        for m in [C.UP, C.RIGHT, C.DOWN, C.LEFT]:
+        for m in [C.UP, C.RIGHT, C.DOWN, C.LEFT]: 
             key = DIRKEY[m]
+        #ch = bfs.chemin(self.gj.solution[0][0], self.player_position)
+        monx, mony = self.level.gj.solution[i][0]
+        px, py = self.level.player_position
+        ch = self.level.bfs.chemin((monx, mony), self.level.bfs.search_floor((px, py)))
+        for prochain in ch[1:]:
+            x, y = prochain
+            px, py = self.level.player_position
+            dep = x-px, y-py
+            # print("Dep : ", dep)
+            # print("C.DIRS : ", C.DIRS)
+            for j in range(len(C.DIRS)):
+                if dep == C.DIRS[j]:
+                    k = j
+            key = DIRKEY[k]
             self.move_character(key)
+#
+        """
+        depx, depy = self.level.gj.solution[i][1]
+        print("pousse : ", depx, depy)
+        for i in range(len(C.DIRS)):
+            if (depx, depy) == C.DIRS[i]:
+                k = i
+        key = DIRKEY[k]
+        """
+        key = DIRKEY[self.level.gj.solution[i][1]]
+        self.move_character(key) 
