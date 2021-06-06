@@ -323,14 +323,12 @@ class Game:
         self.has_changed = False
         self.selected_position = None
         self.origin_board = (0, 0)
-        self.i = 0
+
 
     def load_next(self):
-        self.i = 0
         self.load_level(nextLevel=True)
 
     def load_prev(self):
-        self.i = 0
         self.load_level(prevLevel=True)
 
     def load_level(self, nextLevel=False, prevLevel=False):
@@ -381,7 +379,12 @@ class Game:
 
         sc = S.scores.get()
         self.interface.best_moves(sc)
-
+        
+        #####################################################################################
+        # Transformation de la solution proposée par GrapheJeu en une pile d'action
+        self.sol = self.level.gj.solution[:]
+        self.sol.reverse()
+        
         return True
 
     def create_board(self):
@@ -691,25 +694,28 @@ class Game:
         self.wait_key()
         
     def test_move(self):
-        lensol = len(self.level.gj.solution)
-        for i in range(lensol) :
-            #self.test_move_i(i)
-            self.test_move_i(self.i)
-            self.i += 1
-        
+        # Voir ligne 384 : On a tranformé la solution en pile d'actions
+        # On dépile puis on effectue l'action
+        # une fois seulement à chaque pression  : commenter la boucle while
+        if len(self.sol)>0 :
+            self.test_move_and_push(self.sol.pop())
+        while len(self.sol)>0 :
+            self.test_move_and_push(self.sol.pop())
 
-    def test_move_i(self,i):
+        
+    def test_move_and_push(self,posandpush):
         """
-        "automated" movement: pretend the user has pressed a direction key
-        on the keyboard.
-        Here we move up, right, down, then left
+        pospush est un couple : ((x,y),m)
+        (x,y) est l'endroit où le personnage doit se rendre sans pousser de caisse
+        m est le mouvement à effectuer pour poussser une caisse ensuite 
         """
         for m in [C.UP, C.RIGHT, C.DOWN, C.LEFT]: 
             key = DIRKEY[m]
         #ch = bfs.chemin(self.gj.solution[0][0], self.player_position)
-        monx, mony = self.level.gj.solution[i][0]
+        monx, mony = posandpush[0]
         px, py = self.level.player_position
         ch = self.level.bfs.chemin((monx, mony), self.level.bfs.search_floor((px, py)))
+        print(ch)
         for prochain in ch[1:]:
             x, y = prochain
             px, py = self.level.player_position
@@ -730,5 +736,5 @@ class Game:
                 k = i
         key = DIRKEY[k]
         """
-        key = DIRKEY[self.level.gj.solution[i][1]]
+        key = DIRKEY[posandpush[1]]
         self.move_character(key) 
