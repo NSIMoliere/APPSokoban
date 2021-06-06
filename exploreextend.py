@@ -131,7 +131,7 @@ class Noeud() :
                 xc,yc = prevposcaisse
                 # print("Tous predecesseurs :",prevposperso,prevposcaisse);
                 
-                if plateau.ground[yc][xc] and  plateau.ground[yp][xp] and prevposcaisse not in self :
+                if plateau.ground[yc][xc] and plateau.ground[yp][xp] and prevposcaisse not in self :
                         print("Predecesseurs :",prevposperso,prevposcaisse);print()
                         
                         prevcaisses = self.caisses[:]
@@ -179,10 +179,13 @@ class GrapheJeu() :
         for p in level.boxes :
             self.startpp.remove(p)
         pos = self.startpp.pop()
-        
-        self.solve()
+
        
         while len(self.startpp)>0 and not(self.solve()) :
+            for x in range(self.plateau.width) :
+                for y in range(self.plateau.height) :
+                    if self.success.zone[y][x] == True :
+                        if p in self.startpp : self.startpp.remove(p)
             self.success = Noeud( self.plateau , pos , level.targets )
             pos = self.startpp.pop()
         
