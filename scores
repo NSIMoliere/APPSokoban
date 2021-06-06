@@ -1,5 +1,5 @@
 {
-    "current": "Minicosmos.txt",
+    "current": "Tests.txt",
     "Original.txt": {
         "last_level": 2,
         "levels": [
@@ -15,19 +15,41 @@
             25,
             null,
             null,
-            null,
+            17,
+            17,
             23,
-            33,
             51,
             91
         ]
     },
     "Minicosmos.txt": {
-        "last_level": 2,
+        "last_level": 24,
         "levels": [
             null,
             37,
-            68
+            64,
+            89,
+            71,
+            104,
+            121,
+            105,
+            143,
+            99,
+            106,
+            88,
+            140,
+            94,
+            157,
+            90,
+            140,
+            66,
+            144,
+            82,
+            142,
+            83,
+            103,
+            155,
+            233
         ]
     },
     "Francois.txt": {
