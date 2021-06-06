@@ -131,7 +131,7 @@ class Noeud() :
                 xc,yc = prevposcaisse
                 # print("Tous predecesseurs :",prevposperso,prevposcaisse);
                 
-                if plateau.ground[yp][xp] and plateau.ground[yc][xc] and prevposcaisse not in self :
+                if plateau.ground[yc][xc] and  plateau.ground[yp][xp] and prevposcaisse not in self :
                         print("Predecesseurs :",prevposperso,prevposcaisse);print()
                         
                         prevcaisses = self.caisses[:]
