@@ -62,6 +62,22 @@ class Noeud() :
                     s += '0'  
         self.zonebintodec = int(s,2)
         self.zone = mark2
+        
+    def distanceto(self,other) :
+        """
+        distance entre deux noeuds
+        ?
+        """
+        d = 0
+        for b in self :
+            x,y = b
+            for bb in other :
+                xx,yy = bb
+                cand = (x-xx)**2 + (y-yy)**2
+                if d < cand :
+                    d = cand
+        return d
+        
     
     def __repr__(self) :
         s = "\n[[Noeud id(" + str(self.footprint) +").]]\n" + "boxes pos :" + str(self.caisses) + "\nzone :" + matToString(self.zone)
@@ -140,8 +156,8 @@ class Noeud() :
     #---$# # 
     ##$#   #  
     ##   ###  
-    ########
-    # Précédemment il a pu être là :  pas là :  pas là :
+    ########                          celui là      voisin impossible :
+    # Précédemment il a pu être là :  pas voisin :  pas là :
         ########  ########  ########  ########  ########
         ###--@##  ###---##  ###---##  ###---##  ###   ##   
         #---#$##  #---#-##  #---#-##  #---#-##  #   # ##   
@@ -180,7 +196,7 @@ class Noeud() :
                 xc,yc = prevposcaisse # position de la caisse au coup précédent
                 # print("Tous predecesseurs éventuels :",prevposperso,prevposcaisse);
                 if plateau.ground[yc][xc] and plateau.ground[yp][xp] and prevposcaisse not in self :
-                        print("Predecesseurs :",prevposperso,prevposcaisse);print()
+                        #print("Predecesseurs :",prevposperso,prevposcaisse);print()
                         # print("Predecesseurs possibles:",prevposperso,prevposcaisse);print()
                         # On contruit ce noeud possible :
                         prevcaisses = self.caisses[:]
@@ -239,9 +255,10 @@ class GrapheJeu() :
         """
         # self.success = Noeud( self.plateau , self.player_position , level.targets )
         self.solution = [] # Tableau où la solution sera rangée
-        # Les cases possibles du plateau moins les boites bien positionnées : self.startpp
+        # Les cases possibles du plateau moins les boites positionnées : self.startpp
+        # Ensemble des positions courantes.
         self.startpp = self.plateau.cases
-        for p in level.boxes :
+        for p in level.boxes : # 
             if p in self.startpp : self.startpp.remove(p)
         pos = self.startpp.pop() # Une positon possible du personnage en fin de jeu
         self.success = Noeud( self.plateau , pos , level.targets )
@@ -257,7 +274,8 @@ class GrapheJeu() :
             self.success = Noeud( self.plateau , pos , level.targets )
             pos = self.startpp.pop()
         #   self.success = Noeud( self.plateau , (x,y) , level.targets )
-        for s in self.solution : print(s)
+        # Impression de la solution dans la console
+        # for s in self.solution : print(s)
     
     
     def solve(self) :
@@ -271,13 +289,14 @@ class GrapheJeu() :
         ((5, 5), 2) Aller en (3,2) et pousser vers la gauche
         ((2, 4), 3) Aller en (2,4) et pousser vers la droite 
         """
-        marked = self.BFS()
-        print(marked)
         mvt = 0
         noeud_courant = Noeud(self.plateau , self.player_position, self.boxes)
+        marked = self.BFS(noeud_courant)
+        # print(marked)
         # verbose(marked[noeud_courant.footprint])
         if noeud_courant.footprint in marked.keys() :
             verbose("Il y a une solution")
+            verbose("Nombres de noeud explorés :",str(len(marked.keys())))
             # verbose(marked[noeud_courant.footprint])
             while noeud_courant.footprint in marked.keys() and mvt < 100:
                 prevCaisses = noeud_courant.caisses
@@ -297,7 +316,7 @@ class GrapheJeu() :
                     if m == (0,1) : m = C.DOWN #1
                     if m == (-1,0) : m = C.LEFT #2
                     if m == (1,0) : m = C.RIGHT #3
-                    verbose(str(pd) + " " + str(m))
+                    # verbose(str(pd) + " " + str(m))
                     self.solution.append((pd,m))
                     # verbose(marked[noeud_courant.footprint])
                 else :
@@ -309,27 +328,38 @@ class GrapheJeu() :
             return False
          
     
-    def BFS(self) :
+    def BFS(self,posfrom) :
         """
         Exploration BFS du graphe (en même temps que sa construction !)
         Retourne un tableau de prédecesseurs
         """
         n = self.success
+        posfromfp = posfrom.footprint
         d = 0
-        f = File()
-        f.enqueue(n)
+        f1 = File()
+        f1.enqueue(n)
+        f2 = File() 
         # self.marked = {}
-        self.marked[n.footprint] = (d,n,None)
-        while not f.isempty() :
-            nc = f.dequeue()
+        if posfromfp != n.footprint : # Si on n'est pas à la solution déjà !
+            self.marked[n.footprint] = (d,n,None)
+        while not f1.isempty() or not f2.isempty() :
+            if f2.isempty() :
+                nc = f1.dequeue()
+            else :
+                nc = f2.dequeue()
+            dsuivant = 1800
+            if not f1.isempty() : dsuivant = f1.peek().distanceto(n) + f1.peek().distanceto(posfrom)      
             d = d + 1
-            culdesac = True
             for v in nc.predecesseurs(self.plateau) :
-                verbose(v)
-                if v.footprint not in self.marked.keys() : # Peut-on 
-                    f.enqueue(v)
+                if v.footprint not in self.marked.keys() :
+                    dv = v.distanceto(n) + v.distanceto(posfrom)
+                    if dv < dsuivant :
+                        f2.enqueue(v)
+                    else :
+                        f1.enqueue(v)
                     self.marked[v.footprint] = (d,v,nc)
-                    culdesac = False
+                    if posfromfp == v.footprint :
+                        return self.marked
         return self.marked
 
     

@@ -26,6 +26,8 @@ def display_help():
     print("    -v  verbose mode")
     print("    --no-sound")
     print("        disable sound effects")
+    print("    -ns")
+    print("        disable calcul des solutions")
 
 
 def parse_options():
@@ -34,6 +36,8 @@ def parse_options():
             set_verbose()
         elif o == "--no-sound":
             C.WITH_SOUND = False
+        elif o == "-ns":
+            C.WITH_SOLUTION = False
         elif o == "-h" or o == "--help":
             display_help()
             exit(0)
