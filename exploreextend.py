@@ -252,6 +252,7 @@ class GrapheJeu() :
             for x in range(self.plateau.width) :
                 for y in range(self.plateau.height) :
                     if self.success.zone[y][x] == True :
+                        p = (x,y)
                         if p in self.startpp : self.startpp.remove(p)
             self.success = Noeud( self.plateau , pos , level.targets )
             pos = self.startpp.pop()
