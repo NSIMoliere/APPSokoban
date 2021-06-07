@@ -382,8 +382,9 @@ class Game:
         
         #####################################################################################
         # Transformation de la solution proposée par GrapheJeu en une pile d'action
-        self.sol = self.level.gj.solution[:]
-        self.sol.reverse()
+        if C.WITH_SOLUTION :
+            self.sol = self.level.gj.solution[:]
+            self.sol.reverse()
         
         return True
 
@@ -697,10 +698,11 @@ class Game:
         # Voir ligne 384 : On a tranformé la solution en pile d'actions
         # On dépile puis on effectue l'action
         # une fois seulement à chaque pression  : commenter la boucle while
-        if len(self.sol)>0 :
-            self.test_move_and_push(self.sol.pop())
-        while len(self.sol)>0 :
-            self.test_move_and_push(self.sol.pop())
+        if C.WITH_SOLUTION :
+            if len(self.sol)>0 :
+                self.test_move_and_push(self.sol.pop())
+            while len(self.sol)>0 :
+                self.test_move_and_push(self.sol.pop())
 
         
     def test_move_and_push(self,posandpush):

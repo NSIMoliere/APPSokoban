@@ -46,6 +46,8 @@ WITH_SOUND = True
 SND_FOOTSTEP_NUM = 10
 SND_WOODFRIC_NUM = 5
 
+# solutions
+WITH_SOLUTION = True
 
 # Text alignment
 # vertical

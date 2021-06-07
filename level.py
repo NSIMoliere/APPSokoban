@@ -162,7 +162,8 @@ class Level:
         self.gms = GMC(self,self.player_position)
         
         ##########################################################
-        self.gj = GrapheJeu(self)
+        if C.WITH_SOLUTION :
+            self.gj = GrapheJeu(self)
         # verbose("Fin :\n" + str(self.gj.success))
         
         for y in range(self.height):
