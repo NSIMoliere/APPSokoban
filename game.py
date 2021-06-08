@@ -313,6 +313,7 @@ class Game:
         )
         self.textures = Textures()
         self.sounds = Sounds()
+        self.show_sol = False
 
         if not continueGame:
             S.scores.index_level = 1
@@ -379,7 +380,7 @@ class Game:
 
         sc = S.scores.get()
         self.interface.best_moves(sc)
-        
+
         #####################################################################################
         # Transformation de la solution proposée par GrapheJeu en une pile d'action
         if C.WITH_SOLUTION :
@@ -474,6 +475,12 @@ class Game:
                 # Add code here that you would like to trigger with the 'T' key
                 # For now, just move in a circle in the 'test_move' method
                 self.test_move()
+                    
+            # "Help" key
+            elif event.key == K_h:
+                # Add code here that you would like to trigger with the 'h' key
+                C.WITH_HELP = not C.WITH_HELP
+                self.level.aide()
 
             else:
                 verbose("Unbound key", event.key)
@@ -698,11 +705,14 @@ class Game:
         # Voir ligne 384 : On a tranformé la solution en pile d'actions
         # On dépile puis on effectue l'action
         # une fois seulement à chaque pression  : commenter la boucle while
-        if C.WITH_SOLUTION :
-            if len(self.sol)>0 :
-                self.test_move_and_push(self.sol.pop())
-            while len(self.sol)>0 :
-                self.test_move_and_push(self.sol.pop())
+        
+        if len(self.sol)>0:
+            self.test_move_and_push(self.sol.pop())
+            #self.wait_key()
+        while len(self.sol)>0:
+            self.test_move_and_push(self.sol.pop())
+
+        self.wait_key()
 
         
     def test_move_and_push(self,posandpush):

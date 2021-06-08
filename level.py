@@ -158,14 +158,6 @@ class Level:
         dfs = DFS(self)
         mark = dfs.search_floor(self.player_position)
         
-        ##########################################################
-        self.gms = GMC(self,self.player_position)
-        
-        ##########################################################
-        if C.WITH_SOLUTION :
-            self.gj = GrapheJeu(self)
-        # verbose("Fin :\n" + str(self.gj.success))
-        
         for y in range(self.height):
             for x in range(self.width):
                 if mark[y][x]:
@@ -180,7 +172,25 @@ class Level:
         self.state_stack = []
         self.num_moves = 0
         self.loaded = True
-
+        
+        ##########################################################
+        self.gms = GMC(self,self.player_position)
+        
+        ##########################################################
+        
+        if C.WITH_SOLUTION :
+            self.gj = GrapheJeu(self)
+            
+            # Affichage dès le lancement d'un niveau des cases
+            # interdites
+            self.aide()
+            
+            # Initialisation de l'attribut bfs afin de déterminer
+            # un chemin pour déplacer le perso depuis sa position
+            # actuelle jusqu'à une nouvelle case à atteindre.
+            self.bfs = BFS(self)
+            
+        # verbose("Fin :\n" + str(self.gj.success))
         return True
             
 
@@ -261,52 +271,21 @@ class Level:
         12 = 10 + 2 = 10 + 0b0010
         ...
         """
-        
-        for y in range(self.height):
-            for x in range(self.width):
-                if (x,y) in self.gms.grapheMC.keys() and (x,y) not in self.gms.possibles :
-                    self.mhighlight[y][x] = C.HELP           
-        for position in self.gms.boxes :
-            t = self.gms.boolCaisse(position)
-            x , y = position
-            self.mhighlight[y][x] = 10
-            for i in range(4) :
-                self.mhighlight[y][x] += (1-t[i])*(2**i)   # 10 = 10 + (0b0000) // 11 = 10 + (0b0001) ...    
-        
-        # print("ok pour T")
-        self.bfs = BFS(self)
-        boxes = []
-        targets = []
-        for y in range(self.height):
-            for x in range(self.width):
-                if self.has_box((x, y)):
-                    boxes.append((x, y))
-                if self.is_target((x, y)):
-                    targets.append((x, y))
-
-        """
-        #ch = bfs.chemin(self.gj.solution[0][0], self.player_position)
-        monx, mony = self.gj.solution[0][0]
-        #print("Premier objectif : ", (monx, mony))
-        px, py = self.player_position
-        #print("Position du personnage : ", (px, py))
-        #print("Dictionnaire Parents : ", self.bfs.search_floor((px, py)))
-        ch = self.bfs.chemin((monx, mony), self.bfs.search_floor((px, py)))
-        #print("Chemin à suivre : ", ch)
-        for prochain in ch:
-            x, y = prochain
-            self.mhighlight[y][x] = C.HSELECT
-
-        for box in boxes:
-            #print("Positions des caisses : ", self.bfs.search_floor(box))
-            #print(targets[0])
-            ch = self.bfs.chemin(targets[0], self.bfs.search_floor(box))
-            #print("Déplacement de la caisse : ", ch)
-            if len(ch) > 1:
-                prochain = self.bfs.chemin(targets[0], self.bfs.search_floor(box))[1]
-                x, y = prochain
-                self.mhighlight[y][x] = C.HSUCC
-        """
+        if C.WITH_HELP:
+            for y in range(self.height):
+                for x in range(self.width):
+                    if (x,y) in self.gms.grapheMC.keys() and (x,y) not in self.gms.possibles :
+                        self.mhighlight[y][x] = C.HELP           
+            for position in self.gms.boxes :
+                t = self.gms.boolCaisse(position)
+                x , y = position
+                self.mhighlight[y][x] = 10
+                for i in range(4) :
+                    self.mhighlight[y][x] += (1-t[i])*(2**i)   # 10 = 10 + (0b0000) // 11 = 10 + (0b0001) ...
+        else:
+            for y in range(self.height):
+                for x in range(self.width):
+                    self.mhighlight[y][x] = C.NONE
     
     
     def move_player(self, direction):
@@ -366,7 +345,8 @@ class Level:
             # verbose("GMC :\n" + str(self.gms))
         
         ########################################################################
-        self.aide()
+        if C.WITH_HELP:
+            self.aide()
         ########################################################################
         return player_status
 
