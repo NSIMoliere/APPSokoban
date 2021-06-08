@@ -73,7 +73,7 @@ class Noeud() :
             x,y = b
             for bb in other :
                 xx,yy = bb
-                cand = (x-xx)**2 + (y-yy)**2
+                cand = abs(x-xx) + abs(y-yy)
                 if d < cand :
                     d = cand
         return d
