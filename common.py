@@ -3,6 +3,7 @@ Common definitions for the whole project.
 """
 
 
+
 # List of level packs available for in-game selection
 # Ajoutez ici un pack pour test /assets/levels/nomdupack.txt
 PACKS = [
@@ -42,9 +43,18 @@ MAP_BORDER = 80 # blank space around the level map
 
 
 # sound parameters
-WITH_SOUND = True
+WITH_SOUND = False
 SND_FOOTSTEP_NUM = 10
 SND_WOODFRIC_NUM = 5
+
+# Ajout de notre part ############################################################################### DEBUT ######
+# solutions
+WITH_SOLUTION = True
+DISPLAY_SOLUTION = False
+
+# aide
+WITH_HELP = False
+# Ajout de notre part ############################################################################### FIN ######
 
 
 # Text alignment
@@ -136,3 +146,4 @@ TARGET_FPS  = 40
 ST_IDLE = 0
 ST_MOVING = 1
 ST_PUSHING = 2 # moving and pushing a box
+

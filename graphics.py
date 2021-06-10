@@ -354,7 +354,7 @@ class Textures:
         # red highlight, in case of an error
         def surfError(s): return surfhigh(s, (255, 0, 0),175)
         # redgreen highlight, in case of an error
-        def surfCaisse(s,d): return surfhigh2(s, (255, 0, 0), 175, d)
+        def surfCaisse(s,d): return surfhigh2(s, (255, 0, 0), 100, d)
         
         self.highlights = {}
         for s in C.SPRITESIZES:

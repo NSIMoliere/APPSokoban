@@ -313,6 +313,7 @@ class Game:
         )
         self.textures = Textures()
         self.sounds = Sounds()
+        self.show_sol = False
 
         if not continueGame:
             S.scores.index_level = 1
@@ -323,6 +324,7 @@ class Game:
         self.has_changed = False
         self.selected_position = None
         self.origin_board = (0, 0)
+
 
     def load_next(self):
         self.load_level(nextLevel=True)
@@ -335,6 +337,8 @@ class Game:
         load (or reload) current level or previous/next level
         Return True on success and False if it was not possible to load a level.
         """
+        print("test")
+        self.i = 0
         if nextLevel:
             S.scores.index_level += 1
         if prevLevel:
@@ -377,6 +381,14 @@ class Game:
         sc = S.scores.get()
         self.interface.best_moves(sc)
 
+        # Ajout de notre part ############################################################################### DEBUT ######
+        # Transformation de la solution proposée par GrapheJeu en une pile d'action
+        if C.WITH_SOLUTION :
+            self.sol = self.level.gj.solution[:]
+            self.sol.reverse()
+        # Ajout de notre part ############################################################################### FIN ######
+        
+        
         return True
 
     def create_board(self):
@@ -465,6 +477,12 @@ class Game:
                 # Add code here that you would like to trigger with the 'T' key
                 # For now, just move in a circle in the 'test_move' method
                 self.test_move()
+                    
+            # "Help" key
+            elif event.key == K_h:
+                # Add code here that you would like to trigger with the 'h' key
+                C.WITH_HELP = not C.WITH_HELP
+                self.level.aide()
 
             else:
                 verbose("Unbound key", event.key)
@@ -678,51 +696,55 @@ class Game:
         self.update_screen(flip=False)
         self.interface.show_win(self.window, S.scores.index_level)
         self.wait_key(update=False)
-
         self.load_level(nextLevel=True)
 
     def debug(self):
         self.update_screen()
         print("Waiting for keypress...")
         self.wait_key()
-
-#     def test_move(self):
-#         """
-#         "automated" movement: pretend the user has pressed a direction key
-#         on the keyboard.
-#         Here we move up, right, down, then left
-#         """
-#         for m in [C.UP, C.RIGHT, C.DOWN, C.LEFT]: 
-#             key = DIRKEY[m]
-#             self.move_character(key)
-            
+    
+    
+    # Ajout de notre part ############################################################################### DEBUT ######
     def test_move(self):
+        # Voir ligne 384 : On a tranformé la solution en pile d'actions
+        # On dépile puis on effectue l'action
+        # une fois seulement à chaque pression  : commenter la boucle while
+        
+        if len(self.sol)>0:
+            self.test_move_and_push(self.sol.pop())
+            #self.wait_key()
+        while len(self.sol)>0:
+            self.test_move_and_push(self.sol.pop())
+
+        self.wait_key()
+
+        
+    def test_move_and_push(self,posandpush):
         """
-        "automated" movement: pretend the user has pressed a direction key
-        on the keyboard.
-        Here we move up, right, down, then left
+        pospush est un couple : ((x,y),m)
+        (x,y) est l'endroit où le personnage doit se rendre sans pousser de caisse
+        m est le mouvement à effectuer pour poussser une caisse ensuite 
         """
+        for m in [C.UP, C.RIGHT, C.DOWN, C.LEFT]: 
+            key = DIRKEY[m]
         #ch = bfs.chemin(self.gj.solution[0][0], self.player_position)
-        mony, monx = self.level.gj.solution[0][0]
+        monx, mony = posandpush[0]
         px, py = self.level.player_position
         ch = self.level.bfs.chemin((monx, mony), self.level.bfs.search_floor((px, py)))
+        # print(ch)
         for prochain in ch[1:]:
             x, y = prochain
             px, py = self.level.player_position
             dep = x-px, y-py
-            
-            print("Dep : ", dep)
-            print("C.DIRS : ", C.DIRS)
-            for i in range(len(C.DIRS)):
-                if dep == C.DIRS[i]:
-                    k = i
+            # print("Dep : ", dep)
+            # print("C.DIRS : ", C.DIRS)
+            for j in range(len(C.DIRS)):
+                if dep == C.DIRS[j]:
+                    k = j
             key = DIRKEY[k]
             self.move_character(key)
-#         
-        depy, depx = self.level.gj.solution[0][1]
-        print("pousse : ", depx, depy)
-        for i in range(len(C.DIRS)):
-            if (depx, depy) == C.DIRS[i]:
-                k = i
-        key = DIRKEY[k]
+
+        key = DIRKEY[posandpush[1]]
         self.move_character(key)
+        
+    # Ajout de notre part ############################################################################### FIN ######
