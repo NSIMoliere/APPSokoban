@@ -125,6 +125,9 @@ class File() :
         else :
             return False
     
+    def peek(self) :
+        if len(self.t) > 0 : return self.t[0]
+    
     def __contains__(self,x) :
         return x in self.t
     

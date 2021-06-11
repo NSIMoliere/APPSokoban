@@ -205,6 +205,12 @@ class LevelGraphe():
                     f.enqueue((x,y+1))
         return 
     
+    def noeud_is_Possible(self,n):
+        r = 1
+        for pos in n :
+            x,y = pos
+            r *= self.valeurs[y][x]      
+        return r
     
     
 def main() :
