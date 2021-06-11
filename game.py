@@ -39,6 +39,8 @@ DIRKEY = [
     K_RIGHT,
 ]
 
+STOP = False
+
 
 class GameInterface:
     """
@@ -383,6 +385,7 @@ class Game:
 
         # Ajout de notre part ############################################################################### DEBUT ######
         # Transformation de la solution proposée par GrapheJeu en une pile d'action
+        C.WITH_HELP = False
         if C.WITH_SOLUTION :
             self.sol = self.level.gj.solution[:]
             self.sol.reverse()
@@ -709,13 +712,17 @@ class Game:
         # Voir ligne 384 : On a tranformé la solution en pile d'actions
         # On dépile puis on effectue l'action
         # une fois seulement à chaque pression  : commenter la boucle while
-        
+        #if not self.stop:
         if len(self.sol)>0:
             self.test_move_and_push(self.sol.pop())
-            #self.wait_key()
         while len(self.sol)>0:
+#             stop = False
+#             for event in pygame.event.get():
+#                 if event.type == KEYDOWN and event.key == K_ESCAPE:
+#                     stop = True
+#             if not stop:
             self.test_move_and_push(self.sol.pop())
-
+                
         self.wait_key()
 
         

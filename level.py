@@ -280,14 +280,14 @@ class Level:
             xx,yy = p
             if xx == x :
                 if yy > y :
-                    tt[0] = False
-                else :
-                    tt[1] = False
-            if yy == y :
-                if xx > x :
                     tt[2] = False
                 else :
                     tt[3] = False
+            if yy == y :
+                if xx > x :
+                    tt[0] = False
+                else :
+                    tt[1] = False
         # verbose("Interdit Droite Gauche Bas Haut : " + str(tt))
         return tt
     
