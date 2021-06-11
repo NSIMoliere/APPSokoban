@@ -32,6 +32,7 @@ class Level:
         self.load_file()    # read whole file
         self.loaded = False  # True when a level is loaded
         self.pushed_box = None
+        C.WITH_HELP = False
 
     def place_box(self, box):
         x, y = box
@@ -147,6 +148,8 @@ class Level:
 
     def load(self, levelnum):
         self.loaded = False
+        
+        C.WITH_HELP = False
 
         if levelnum > len(self.level_lines):
             return False
@@ -176,7 +179,7 @@ class Level:
         # Ajout de notre part ############################################################################### DEBUT ######
         self.gl = LevelGraphe(self)
         
-        
+        '''
         if C.WITH_SOLUTION :
             self.gj = GrapheJeu(self)
             
@@ -188,7 +191,7 @@ class Level:
             # un chemin pour déplacer le perso depuis sa position
             # actuelle jusqu'à une nouvelle case à atteindre.
             self.bfs = BFS(self)
-            
+        '''    
         # verbose("Fin :\n" + str(self.gj.success))
         # Ajout de notre part ############################################################################### FIN ######
         
@@ -280,14 +283,14 @@ class Level:
             xx,yy = p
             if xx == x :
                 if yy > y :
-                    tt[2] = False
-                else :
-                    tt[3] = False
-            if yy == y :
-                if xx > x :
                     tt[0] = False
                 else :
                     tt[1] = False
+            if yy == y :
+                if xx > x :
+                    tt[2] = False
+                else :
+                    tt[3] = False
         # verbose("Interdit Droite Gauche Bas Haut : " + str(tt))
         return tt
     
@@ -506,6 +509,7 @@ class Level:
         """
         x,y = pos
         return self.is_floor((x,y-1)) and self.is_floor((x,y+1))
+    
     
     # Ajout de notre part ############################################################################### FIN ######
         

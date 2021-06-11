@@ -325,20 +325,20 @@ class Textures:
             m = m - 10 
             pot_surface = pygame.Rect(0.25*size, 0.25*size, 0.5*size, 0.5*size)
             surf.fill(C.GREEN,pot_surface)  # green highlight
-            if m % 2 == 1 :
-                pot_surface = pygame.Rect(0.9*size, 0*size, 0.1*size, 1*size)
+            if m % 2 == 1 : # Bas
+                pot_surface = pygame.Rect(0*size, 0.9*size, 1*size, 0.1*size) #Bas
                 surf.fill(color,pot_surface)
             m = m // 2
-            if m % 2 == 1 :
-                pot_surface = pygame.Rect(0*size, 0*size, 0.1*size, 1*size)
+            if m % 2 == 1 : # Haut
+                pot_surface = pygame.Rect(0*size, 0*size, 1*size, 0.1*size) # Haut
                 surf.fill(color,pot_surface)
             m = m // 2
-            if m % 2 == 1 :
-                pot_surface = pygame.Rect(0*size, 0.9*size, 1*size, 0.1*size)
+            if m % 2 == 1 : # Droite
+                pot_surface = pygame.Rect(0.9*size, 0*size, 0.1*size, 1*size) # Droite
                 surf.fill(color,pot_surface)
             m = m // 2
-            if m % 2 == 1 :
-                pot_surface = pygame.Rect(0*size, 0*size, 1*size, 0.1*size)
+            if m % 2 == 1 : # Gauche
+                pot_surface = pygame.Rect(0*size, 0*size, 0.1*size, 1*size) # Gauche
                 surf.fill(color,pot_surface)
             m = m // 2
             return surf
