@@ -96,7 +96,7 @@ class Noeud() :
     
     def __hash__(self):
         # Renvoit un entier unique qui caractèrise le noeud
-        # (..(((0,(xb1,yb1)),(xb2,yb2)),(xb3,yb3))..,(xz,yz)
+        # ((((0,(xb1,yb1)),(xb2,yb2)),(xb3,yb3))..,(empruntebinairedelazone))
         # Où b1,b2,b3 sont les positions des boites
         # Et z est la zone où se trouve le joueur
         self.caisses.sort()
@@ -202,6 +202,59 @@ class Noeud() :
                             predecesseurs.append(predecesseur) # Le mouvement a pu se faire                       
         return predecesseurs
 
+    def successeurs(self,plateau) :
+        """
+        Renvoit un tableau contenant les noeuds successeurs dans le graphe
+        """
+        mvts = [(-1,0),(+1,0),(0,-1),(0,+1)] # Mouvements possibles
+        successeurs = []
+        # Pour chacun des mouvements
+        for dpos in mvts : 
+            # Pour chacune des caisses :
+            for i in range(len(self)) :
+                pos = self.caisses[i]
+                #######
+                #######
+                ### ###
+                ## $ ## Ici la caisse a quatre successeurs possibles
+                ### ###
+                #######
+                #######
+                nextposcaisse = tuple(map(sum, zip(pos,dpos)))
+                nextposperso = pos
+                xp,yp = nextposperso # position du perso pour pousser la caisse
+                xc,yc = nextposcaisse # position de la caisse au coup précédent
+                # print("Tous successeurs éventuels :",nextposperso,nextposcaisse);
+                if plateau.ground[yc][xc] and plateau.ground[yp][xp] and nextposcaisse not in self : 
+                        # On contruit ce noeud possible :
+                        nextcaisses = self.caisses[:]
+                        nextcaisses[i] = nextposcaisse
+                        successeur = Noeud(self.plateau,nextposperso,nextcaisses)
+                        # On l'ajoute au tableau si seulement c'est possible
+                        # Considération sur l'intersection des zones accessibles avant et maintenant
+                        if andMbool(self.zone,successeur.zone)[yp][xp] : # Voir complements : on fait l'intersection AND des deux matrices
+                            successeurs.append(successeur) # Le mouvement a pu se faire                       
+        return successeurs
+
+
+class Arc() :
+    def __init__(self,posToPush) :
+        self.posToPush = posToPush
+        self.posFrom = posToPush
+        
+    def __repr__(self) :
+        s = '|--' + str(self.posFrom) + '---' + str(self.posToPush) + '-->'
+        return s
+        
+    def setFrom(self,position) :
+        self.posFrom = position
+        
+    def copy(self) :
+        A = Arc(self.posToPush)
+        A.posFrom = self.posFrom
+        return A
+
+    
     
 class GrapheJeu() :
     """
@@ -212,44 +265,19 @@ class GrapheJeu() :
         self.plateau = Plateau(level) 
         self.player_position = level.player_position
         self.boxes = level.boxes
-        # Le noeud où le jeu est gagnant (Attention il peut y avoir plusieurs noeuds gagnants)
-        """ Exemple : Microcosmos - 3eme niveau
-        4 Noeuds gagnants possibles : C'est la position du personnage @ après le dernier coup qui change
-        Les prédécesseurs ne sont pas les mêmes
-        ########  ########  ########  ########
-        ###   ##  ###   ##  ###   ##  ###   ##
-        #   #@##  #   # ##  #   # ##  #   # ##  
-        # #  $ #  # #  $ #  # #  $ #  # #  $ #  
-        # $  # #  # $@ # #  # $  # #  # $  # #
-        ## #$  #  ## #$  #  ## #$@ #  ##@#$  #
-        ##   ###  ##   ###  ##   ###  ##   ###
-        ########  ########  ########  ########
-        Ces quatres noeuds ne sont pas la même situation finale pourtant chacune favorables
-        """
-        # self.success = Noeud( self.plateau , self.player_position , level.targets )
+        self.gl = level.gl
         self.solution = [] # Tableau où la solution sera rangée
-        # Les cases possibles du plateau moins les boites positionnées : self.startpp
-        # Ensemble des positions courantes.
-        self.startpp = self.plateau.cases
-        for p in level.boxes : # 
-            if p in self.startpp : self.startpp.remove(p)
-        pos = self.startpp.pop() # Une positon possible du personnage en fin de jeu
-        self.success = Noeud( self.plateau , pos , level.targets )
-        self.marked = {} # Ici on accueillera le graphe des predecesseurs
-        self.explored = False # Si un premier BFS a été réalisé compñétement ou non 
-        while len(self.startpp)>0 and not(self.solve()) : # Tentative de solution depuis ici
-            self.explored = True
-            for x in range(self.plateau.width) :
-                for y in range(self.plateau.height) :
-                    if self.success.zone[y][x] == True :
-                        p = (x,y)
-                        if p in self.startpp : self.startpp.remove(p)
-            self.success = Noeud( self.plateau , pos , level.targets )
-            if len(self.startpp)>0 : pos = self.startpp.pop()
-        # self.success = Noeud( self.plateau , (x,y) , level.targets )
+        
+               
+        # Équivalent avec la solution précédente : Voir plus bas pour la méthode issuesfavorables de Plateau
+        self.marked = {}
+        self.isf = self.plateau.issuesfavorables[:]
+        if len(self.isf) > 0 : self.success = self.isf.pop();
+        while not(self.solve()) and len(self.isf) > 0 :
+            self.success = self.isf.pop();
         # Impression de la solution dans la console
         # for s in self.solution : print(s)
-    
+        
     
     def solve(self) :
         """
@@ -272,7 +300,7 @@ class GrapheJeu() :
             print("Il y a une solution")
             print("Nombres de noeud construits :",str(len(marked.keys())))
             # verbose(marked[noeud_courant.footprint])
-            while noeud_courant.footprint in marked.keys() and mvt < 100:
+            while noeud_courant.footprint in marked.keys() :#and mvt < 100:
                 prevCaisses = noeud_courant.caisses
                 noeud_courant = marked[noeud_courant.footprint][2]
                 if noeud_courant is not None :
@@ -295,7 +323,7 @@ class GrapheJeu() :
                     # verbose(marked[noeud_courant.footprint])
                 else :
                     break # Permet de ne pas renvoyer un noeud courant None dans la boucle
-                mvt =  mvt + 1
+                #mvt =  mvt + 1
             print("Une solution en "+str(mvt)+" mouvements de caisses.")
             
             return True
@@ -304,10 +332,86 @@ class GrapheJeu() :
             return False
          
     
+    def BFSfrom(self,posfrom) :
+        pass
+        print("Montée : ")
+        n = self.success # On part ici du noeud de succes et on remonte dans le graphe : liste des prédecesseurs
+        posfromfp = posfrom.footprint # On cherche la situation actuelle
+        # On en profite aussi pour renseigner la liste des successeurs
+        # Condition d'arrêt :
+        # ?
+        d = 0
+        f1from = File()
+        f1from.enqueue(n)
+        if posfromfp != n.footprint : # Si on n'est pas à la solution déjà !
+            if n.footprint not in self.LstPreced :
+                self.LstPreced[n.footprint] = {}
+        else :
+            return self.LstSucc
+        # Remontée
+        while not f1from.isempty() :
+            nc = f1from.dequeue()
+            d = d + 1
+            for v in nc.predecesseurs(self.plateau) :
+                if self.gl.noeud_is_Possible(v) != 0 :
+                    if v.footprint not in self.LstPreced.keys() :
+                        # dd = 0
+                        dv = self.gl.noeud_is_Possible(v)
+                        if dv != 0 :
+                            f1from.enqueue(v)
+                        if nc.footprint not in self.LstPreced :
+                            self.LstPreced[nc.footprint] = (d,dcum,v,nc)
+                        else :
+                            self.LstPreced[nc.footprint].add((d,dcum,v,nc))
+                        if v.footprint not in LstSucc :
+                            self.LstSucc[v.footprint] = (d,dcum,v,nc)
+                        else :
+                            self.LstSucc[v.footprint].add((d,dcum,v,nc))
+                        if posfromfp == v.footprint :
+                            return self.LstSucc
+        return self.LstSucc
+        
+        
+        
+    def BFSto(self,posfrom) :
+        pass
+        print("Descente : ")
+        n = self.success # On cherche la situation de succes
+        posfromfp = posfrom.footprint # On part ici de la situation actuelle, on descend : liste des successeurs
+        # On en profite aussi pour renseigner liste des prédecesseurs
+        # Condition d'arrêt :
+        # ?
+        d = 0
+        f1to = File()
+        f1to.enqueue(posfrom)
+        if posfromfp != n.footprint : # Si on n'est pas à la solution déjà !
+            self.LstSucc[n.footprint] = {}
+        else :
+            return self.LstSucc
+        # Descente
+        while not f1to.isempty() :
+            nc = f1to.dequeue()
+            d = d + 1
+            for v in nc.successeurs(self.plateau) :
+                if self.gl.noeud_is_Possible(v) != 0 :
+                    if v.footprint not in self.LstSucc.keys() :
+                        # dd = 0
+                        dv = self.gl.noeud_is_Possible(v)
+                        if dv != 0 :
+                            f1to.enqueue(v)
+                        self.LstSucc[nc.footprint] = (d,dcum,nc,v) # On met l'arc entier
+                        self.LstPreced[v.footprint] = (d,dcum,nc,v) # On met l'arc entier
+                        if n.footprint == v.footprint :
+                            return self.LstSucc
+        return self.LstSucc
+        
+        
+    
+    
     def BFS(self,posfrom) :
         """
         Exploration BFS du graphe (en même temps que sa construction !)
-        Retourne un tableau de prédecesseurs
+        Retourne un tableau de prédecesseurs et un tableau
         """
         print("Tentative de solution")
         n = self.success
@@ -324,19 +428,23 @@ class GrapheJeu() :
                 nc = f1.dequeue()
             else :
                 nc = f2.dequeue()
-            dsuivant = 2**30
-            if not f1.isempty() : dsuivant = f1.peek().distanceto(n)  + f1.peek().distanceto(posfrom)      
+            dsuivant = 0
+            if not f1.isempty() : dsuivant = self.gl.noeud_is_Possible(f1.peek()) + f1.peek().distanceto(n)  
             d = d + 1
             for v in nc.predecesseurs(self.plateau) :
-                if v.footprint not in self.marked.keys() :
-                    dv = v.distanceto(n)  + v.distanceto(posfrom)
-                    if dv < dsuivant :
-                        f2.enqueue(v)
-                    else :
-                        f1.enqueue(v)
-                    self.marked[v.footprint] = (d,v,nc)
-                    if posfromfp == v.footprint :
-                        return self.marked
+                if self.gl.noeud_is_Possible(v) != 0 :
+                    if v.footprint not in self.marked.keys() :
+                        dd = 0
+                        dv =  self.gl.noeud_is_Possible(v)
+                        if not f1.isempty() :
+                             dv += f1.peek().distanceto(n) 
+                        if dv > dsuivant :
+                            f2.enqueue(v)
+                        else :
+                            f1.enqueue(v)
+                        self.marked[v.footprint] = (d,v,nc)
+                        if posfromfp == v.footprint :
+                            return self.marked
         return self.marked
 
     
@@ -356,6 +464,46 @@ class Plateau() :
                 if self.ground[y][x]:
                     self.cases.append((x,y))
         print(self.cases)
+        self.issuesfavorables = self.successPossibles()
+
+    def successPossibles(self):
+        """
+        Retourne les noeuds possibles de fin, dans un tableau :
+        Il y en a plusieurs car la position des caisses finale peut déterminer plusieurs zone différentes
+        Exemple : Microcosmos - 3eme niveau
+        4 Noeuds gagnants possibles : C'est la position du personnage @ après le dernier coup qui change
+        Les prédécesseurs ne sont pas les mêmes
+        ########  ########  ########  ########
+        ###   ##  ###   ##  ###   ##  ###   ##
+        #   #@##  #   # ##  #   # ##  #   # ##  
+        # #  $ #  # #  $ #  # #  $ #  # #  $ #  
+        # $  # #  # $@ # #  # $  # #  # $  # #
+        ## #$  #  ## #$  #  ## #$@ #  ##@#$  #
+        ##   ###  ##   ###  ##   ###  ##   ###
+        ########  ########  ########  ########
+        Ces quatres noeuds ne sont pas la même situation finale pourtant chacune favorables.
+        """
+        issuesfav = []
+        finalpp = []
+        for x in range(self.width) :
+            for y in range(self.height) :
+                if self.level.is_floor((x,y)) :
+                    finalpp.append((x,y)) 
+        for p in self.level.targets : # 
+            if p in finalpp : finalpp.remove(p)
+        pos = finalpp.pop() # Une positon possible du personnage en fin de jeu
+        success = Noeud( self , pos , self.level.targets )
+        while len(finalpp)>0 :
+            issuesfav.append(success)
+            for x in range(self.width) :
+                for y in range(self.height) :
+                    if success.zone[y][x] == True :
+                        p = (x,y)
+                        if p in finalpp : finalpp.remove(p)
+            success = Noeud( self, pos , self.level.targets )
+            if len(finalpp)>0 : pos = finalpp.pop()
+        return issuesfav
+
 
     
 def main() :
