@@ -94,7 +94,7 @@ class Noeud() :
                 '''
                 # Prise en compte de la topologie du plateau
                 # Tenseurs : Les tenseurs sont créés dans niveau.py : k est à régler à la main
-                k = 2 * self.plateau.level.gj.nbcases
+                # k = 2 * self.plateau.level.gj.nbcases
                 # Attention si appel avec cases non praticables Division by zero
                 # ratio = k / (self.plateau.level.gj.tensions[y][x] + self.plateau.level.gj.tensions[yy][xx])
                 # btobb = ratio * btobb
