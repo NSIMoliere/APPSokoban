@@ -21,8 +21,8 @@ from complements import *
 # Elle contient l'emplacement des caisses
 # Elle contient l'emplacement du personnage de manière normalisée :
 #    sous forme d'une zone atteignable (matrice de booléen True, False)
-# Pour pouvoir la retrouver sous forme de clé du dictionnaire, on produit aussi une emprunte unique
-# Le décimal correspondant au nombres binaire de cette matrice + les caisses
+# Pour pouvoir la retrouver sous forme de clé du dictionnaire, on produit aussi une empreinte unique
+# Le décimal correspondant à la concaténation des nombres binaires de cette matrice + les caisses
 #
 # L'unique chose très importante ici est la recherche des prédécesseurs (plus bas) ou successeurs (pas faite, ça vous tente ?)
 ###########################################################################################
@@ -346,7 +346,7 @@ class GrapheJeu() :
         """
         Reconstruis le trajet depuis calculé par le BFS du graphe des situations de jeu
         Le graphe est construit en début de programme
-        Renvoit une liste de points (x,y) o le personnage doit aller
+        Renvoit une liste de points (x,y) ou le personnage doit aller
         Puis le mouvement à faire pour pousser la caisse
         ((4, 5), 0) Aller en (5,5) et pousser vers le haut
         ((3, 2), 1) Aller en (3,2) et pousser vers le bas
