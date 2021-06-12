@@ -383,9 +383,11 @@ class Game:
 
         # Ajout de notre part ############################################################################### DEBUT ######
         # Transformation de la solution proposée par GrapheJeu en une pile d'action
+        
         if C.WITH_SOLUTION :
             self.sol = self.level.gj.solution[:]
             self.sol.reverse()
+        
         # Ajout de notre part ############################################################################### FIN ######
         
         

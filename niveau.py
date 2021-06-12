@@ -13,7 +13,7 @@ class LevelGraphe():
         self.valeursTo.reverse()
         self.valeursFrom = [i for i in range(1,20)]
         self.valeursFrom.reverse() # Marqueurs From non utilisés
-
+        
         self.targets = self.level.targets[:]
         self.targetsVues = []
         self.boxes = self.level.boxes[:]
@@ -32,17 +32,33 @@ class LevelGraphe():
      
         
         # Résultat
-        print(matString(self.VTo))
-        print(matString(self.VFrom))
+        # print(matString(self.VTo))
+        # print(matString(self.VFrom))
         self.valeurs = MparM(self.VTo,self.VFrom)
-        print(matString(self.valeurs))
+        # print(matString(self.valeurs))
         
+        # Renseignement des cases impossibles (utilisé pour l'affichage H)
         self.impossibles = []
         # Case zéro : Impossible d'y passer une caisse :
         for y in range(self.level.height):
             for x in range(self.level.width):
                 if self.valeurs[y][x] == 0 and self.level.is_floor((x,y)):
                     self.impossibles.append((x,y))
+        
+        
+        # Creer matrice des cases de jeu :
+        # print(matString(self.level.map))
+        self.cases = MCreate(self.level.width,self.level.height,1) #(Matrice de 0)
+        for y in range(self.level.height):
+            for x in range(self.level.width):
+                if self.level.map[y][x] == 1 or self.level.map[y][x] == 6 :
+                    self.cases[y][x] = 0
+        self.nbcases = sommeMat(self.cases) 
+        # print(matString(self.cases))
+        
+        # Tenseurs
+        self.tensions = tensionsMat(self.cases)
+        print(matString(self.tensions))
         
         
     def bfsFrom(self, depart=None) :
@@ -207,7 +223,7 @@ class LevelGraphe():
     
     def noeud_is_Possible(self,n):
         r = 1
-        for pos in n :
+        for pos in n.caisses :
             x,y = pos
             r *= self.valeurs[y][x]      
         return r

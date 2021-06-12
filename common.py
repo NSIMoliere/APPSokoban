@@ -7,7 +7,8 @@ Common definitions for the whole project.
 # List of level packs available for in-game selection
 # Ajoutez ici un pack pour test /assets/levels/nomdupack.txt
 PACKS = [
-      'Original.txt'
+    'Presentation.txt'
+    , 'Original.txt'
     , 'Minicosmos.txt'
     , 'Simple Sokoban.txt'
     , 'Tests.txt'
@@ -50,7 +51,7 @@ SND_WOODFRIC_NUM = 5
 # Ajout de notre part ############################################################################### DEBUT ######
 # solutions
 WITH_SOLUTION = True
-DISPLAY_SOLUTION = False
+PLAY_SOLUTION = False
 
 # aide
 WITH_HELP = False

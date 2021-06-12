@@ -179,7 +179,7 @@ class Level:
         # Ajout de notre part ############################################################################### DEBUT ######
         self.gl = LevelGraphe(self)
         
-        '''
+        
         if C.WITH_SOLUTION :
             self.gj = GrapheJeu(self)
             
@@ -191,7 +191,7 @@ class Level:
             # un chemin pour déplacer le perso depuis sa position
             # actuelle jusqu'à une nouvelle case à atteindre.
             self.bfs = BFS(self)
-        '''    
+            
         # verbose("Fin :\n" + str(self.gj.success))
         # Ajout de notre part ############################################################################### FIN ######
         
@@ -318,7 +318,7 @@ class Level:
             # for position in self.gms.boxes :
                 t = self.boolCaisse(position)
                 # t = self.gms.boolCaisse(position)
-                x , y = position
+                x,y = position
                 self.mhighlight[y][x] = 10
                 for i in range(4) :
                     self.mhighlight[y][x] += (1-t[i])*(2**i)   # 10 = 10 + (0b0000) // 11 = 10 + (0b0001) ...
