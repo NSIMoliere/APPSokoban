@@ -386,7 +386,7 @@ class GrapheJeu() :
                     # verbose(marked[noeud_courant.footprint])
                 else :
                     break # Permet de ne pas renvoyer un noeud courant None dans la boucle
-                #mvt =  mvt + 1
+                mvt =  mvt + 1
             print("Une solution en "+str(mvt)+" mouvements de caisses.")
             
             return True
