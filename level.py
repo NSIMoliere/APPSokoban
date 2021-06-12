@@ -13,6 +13,9 @@ from copy import deepcopy
 from explore import *
 from utils import *
 from exploreextend import *
+# from graphemovecaisse import *
+from complements import *
+from niveau import *
 
 
 class Level:
@@ -22,7 +25,6 @@ class Level:
 
     def __init__(self, game, filename):
         self.game = game
-        verbose("Nouveau Jeu : " + str(game))
         self.num_moves = 0
         self.filename = filename # String Nom du fichier : .txt
         self.level_lines = []
@@ -30,7 +32,7 @@ class Level:
         self.load_file()    # read whole file
         self.loaded = False  # True when a level is loaded
         self.pushed_box = None
-        # verbose("Graphe Mouvement Caisse :" + str(gmc.grapheMC))
+        C.WITH_HELP = False
 
     def place_box(self, box):
         x, y = box
@@ -102,7 +104,7 @@ class Level:
         verbose("Level size: ", self.width, "x", self.height)
         # verbose(self.map)
         # verbose(self.mboxes)
-        verbose("boxes :" + str(self.boxes))
+        # verbose("boxes :" + str(self.boxes))
 
     def load_file(self):
         """
@@ -146,6 +148,8 @@ class Level:
 
     def load(self, levelnum):
         self.loaded = False
+        
+        C.WITH_HELP = False
 
         if levelnum > len(self.level_lines):
             return False
@@ -156,14 +160,6 @@ class Level:
         # Use DFS to mark the interior floor as ground
         dfs = DFS(self)
         mark = dfs.search_floor(self.player_position)
-        
-        #
-        self.gms = GMC(self,self.player_position)
-        
-        #
-        self.gj = GrapheJeu(self)
-        verbose("Fin :\n" + str(self.gj.success))
-        print(self.gj.solution)
         
         for y in range(self.height):
             for x in range(self.width):
@@ -180,61 +176,27 @@ class Level:
         self.num_moves = 0
         self.loaded = True
         
+        # Ajout de notre part ############################################################################### DEBUT ######
+        self.gl = LevelGraphe(self)
         
+        
+        if C.WITH_SOLUTION :
+            self.gj = GrapheJeu(self)
+            
+            # Affichage dès le lancement d'un niveau des cases
+            # interdites
+            self.aide()
+            
+            # Initialisation de l'attribut bfs afin de déterminer
+            # un chemin pour déplacer le perso depuis sa position
+            # actuelle jusqu'à une nouvelle case à atteindre.
+            self.bfs = BFS(self)
+            
+        # verbose("Fin :\n" + str(self.gj.success))
+        # Ajout de notre part ############################################################################### FIN ######
         
         return True
-    
-    def solve(self) :
-        pass
-    
-    def moveplayerto(self,pos) :
-        dest = pos
-        orig = self.player_position
-        verbose(orig)
-        f = File()
-        f.enqueue(dest)
-        marked = {}
-        marked[dest] = (None,None)
-        # while (n = f.dequeue()) : Est-ce qu' il y a une syntaxe pour ça en python ?
-        # verbose(f.isempty())
-        while not f.isempty() :
-            pc = f.dequeue()
-            x,y = pc
-            for d, (mx, my) in enumerate(C.DIRS):
-                if not self.is_wall((y+my,x+mx)) and not self.has_box((y+my,x+mx))  :
-                    np = pc
-                    verbose(pc)
-                    nc = (y+my,x+mx)
-                    if nc not in marked.keys() :
-                        marked[nc] = (d,np)
-                        f.enqueue(nc)
-                    
-        chemin = []
-        verbose(marked)
-        
-        nc = orig 
-        while marked[nc] is not (None,None) :
-            chemin.append(marked[nc][0])
-            nc = marked[nc][1]
-        for m in chemin :
-            key = DIRKEY[m]
-            self.game.move_character(m)
-        
-        
-    def move(self,t):
-        """
-        "automated" movement: pretend the user has pressed a direction key
-        on the keyboard.
-        Here we move up, right, down, then left
-        """
-        for m in t :
-            key = DIRKEY[m]
-            self.game.move_character(key)
-                    
-        return marked
-        for m in [C.UP, C.RIGHT, C.DOWN, C.LEFT]:
-            key = DIRKEY[m]
-            self.move_character(key)
+            
 
     def reset_highlight(self):
         for y in range(self.height):
@@ -281,7 +243,58 @@ class Level:
     def push_state(self):
         self.state_stack.append(self.get_current_state())
         # verbose("dernier etat (Level.state_stack[-1]) : " + str(self.state_stack[-1]))
-               
+     
+    # Ajout de notre part ############################################################################### DEBUT ######   
+    def autourCaisse(self,position):
+        """
+        Construis autour d'une caisse les positions interdites sous la forme
+        d'un tableau de positions [(x,y),...]
+        Principe une caisse peut être bloquée  par une autre dans une composante (horizontale / verticale)
+        si elles passent toutes deux d'un degré deux hypotétiquement à un degré 0 
+        """
+        t = []
+        if self.is_floor(position) : 
+            if self.mightMoveRightLeft(position) and not self.mightMoveUpDown(position) :
+                x,y = position
+                for (mx, my) in [(-1,0),(+1,0)]:
+                    voisin = (x+mx, y+my)
+                    if self.is_floor(voisin) and not self.mightMoveUpDown(voisin) :
+                        t.append(voisin)
+            if not self.mightMoveRightLeft(position) and self.mightMoveUpDown(position) :
+                x,y = position
+                for (mx, my) in [(0,+1),(0,-1)]:
+                    voisin = (x+mx, y+my)
+                    if self.is_floor(voisin) and not self.mightMoveRightLeft(voisin) :
+                        t.append(voisin)
+        return t
+    
+    def boolCaisse(self,position):
+        """
+        Quelles sont les positions qui interdisent le voisinage de deux caisses ?
+        retourne un tableau t de quatre booléens pour Bas Haut Droite Gauche 
+        True = "ok", False = "interdit de mettre une autre caisse"
+        """
+        # verbose("Autour de caisse : " + str(position))
+        t = []
+        tt = [True,True,True,True]
+        t = self.autourCaisse(position)
+        x,y = position
+        for p in t :
+            xx,yy = p
+            if xx == x :
+                if yy > y :
+                    tt[0] = False
+                else :
+                    tt[1] = False
+            if yy == y :
+                if xx > x :
+                    tt[2] = False
+                else :
+                    tt[3] = False
+        # verbose("Interdit Droite Gauche Bas Haut : " + str(tt))
+        return tt
+    
+    
     def aide(self):
         """
         positionne le highlight C.HELP sur les case interdites pour une caisse
@@ -292,48 +305,28 @@ class Level:
         12 = 10 + 2 = 10 + 0b0010
         ...
         """
-        for y in range(self.height):
-            for x in range(self.width):
-                if (x,y) in self.gms.grapheMC.keys() and (x,y) not in self.gms.possibles :
-                    self.mhighlight[x][y] = C.HELP           
-        for position in self.gms.boxes :
-            t = self.gms.boolCaisse(position)
-            x , y = position
-            self.mhighlight[y][x] = 10
-            for i in range(4) :
-                self.mhighlight[y][x] += (1-t[i])*(2**i)   # 10 = 10 + (0b0000) // 11 = 10 + (0b0001) ...    
-
-        self.bfs = BFS(self)
-        boxes = []
-        targets = []
-        for y in range(self.height):
-            for x in range(self.width):
-                if self.has_box((x, y)):
-                    boxes.append((x, y))
-                if self.is_target((x, y)):
-                    targets.append((x, y))
-
-        #ch = bfs.chemin(self.gj.solution[0][0], self.player_position)
-        mony, monx = self.gj.solution[0][0]
-        #print("Premier objectif : ", (monx, mony))
-        px, py = self.player_position
-        #print("Position du personnage : ", (px, py))
-        #print("Dictionnaire Parents : ", self.bfs.search_floor((px, py)))
-        ch = self.bfs.chemin((monx, mony), self.bfs.search_floor((px, py)))
-        #print("Chemin à suivre : ", ch)
-        for prochain in ch:
-            x, y = prochain
-            self.mhighlight[y][x] = C.HSELECT
-
-        for box in boxes:
-            #print("Positions des caisses : ", self.bfs.search_floor(box))
-            #print(targets[0])
-            ch = self.bfs.chemin(targets[0], self.bfs.search_floor(box))
-            #print("Déplacement de la caisse : ", ch)
-            if len(ch) > 1:
-                prochain = self.bfs.chemin(targets[0], self.bfs.search_floor(box))[1]
-                x, y = prochain
-                self.mhighlight[y][x] = C.HSUCC
+        if C.WITH_HELP:
+            for y in range(self.height):
+                for x in range(self.width):
+                    if (x,y) in self.gl.impossibles :
+                    # if (x,y) in self.gms.grapheMC.keys() and (x,y) not in self.gms.possibles :
+                        self.mhighlight[y][x] = C.HELP
+            
+            # A faire sortir ça de gms si possible :
+            
+            for position in self.boxes :
+            # for position in self.gms.boxes :
+                t = self.boolCaisse(position)
+                # t = self.gms.boolCaisse(position)
+                x,y = position
+                self.mhighlight[y][x] = 10
+                for i in range(4) :
+                    self.mhighlight[y][x] += (1-t[i])*(2**i)   # 10 = 10 + (0b0000) // 11 = 10 + (0b0001) ...
+        else:
+            for y in range(self.height):
+                for x in range(self.width):
+                    self.mhighlight[y][x] = C.NONE
+    # Ajout de notre part ############################################################################### FIN ######
     
     def move_player(self, direction):
         """
@@ -385,13 +378,20 @@ class Level:
         if player_status != C.ST_IDLE:
             self.num_moves += 1
         
-        self.gms.update(self)
+        # Ajout de notre part ############################################################################### DEBUT ######
+        # self.gms.update(self)
         # verbose("Renvoyé par Level.move_player() (0-bloque / 1-libre / 2-pousse)" + str(player_status))
-        if player_status == 2 :
-            self.gms.update(self)
+        # if player_status == 2 :
+            # self.gms.update(self)
             # verbose("GMC :\n" + str(self.gms))
         
-        self.aide()
+        ########################################################################
+        if C.WITH_HELP:
+            self.aide()
+        ########################################################################
+            
+        # Ajout de notre part ############################################################################### FIN ######
+        
         
         return player_status
 
@@ -404,14 +404,13 @@ class Level:
         self.mboxes[y][x] = True
 
 
-
     def update_box_positions(self):
         self.boxes = []
         for y in range(self.height):
             for x in range(self.width):
                 if self.mboxes[y][x]:
                     self.boxes.append((x, y))
-        self.gms.update(self)
+        # self.gms.update(self)
                     
 
     def cancel_last_change(self):
@@ -462,6 +461,58 @@ class Level:
                 h = self.mhighlight[y][x]
                 if h:
                     window.blit(highlights[C.SPRITESIZE][h], pos)
+                    
+    # Ajout de notre part ############################################################################### DEBUT ######
+    def mightComeFromLeft(self,pos) :
+        """
+        retourne la possibilité de pouvoir se déplacer depuis la gauche vers la position
+        """
+        x,y = pos
+        return self.is_floor((x-1,y)) and self.is_floor((x-2,y))
+    
+    
+    def mightComeFromRight(self,pos) :
+        """
+        retourne la possibilité de pouvoir se déplacer depuis la droite vers la position
+        """
+        x,y = pos
+        return self.is_floor((x+1,y)) and self.is_floor((x+2,y))
+    
+    
+    def mightComeFromAbove(self,pos) :
+        """
+        retourne la possibilité de pouvoir se déplacer depuis le haut vers la position
+        """
+        x,y = pos
+        return self.is_floor((x,y-1)) and self.is_floor((x,y-2))
+    
+    
+    def mightComeFromBelow(self,pos) :
+        """
+        retourne la possibilité d'une boite de pouvoir se déplacer depuis le bas vers la position
+        """
+        x,y = pos
+        return self.is_floor((x,y+1)) and self.is_floor((x,y+2))
+    
+    
+    def mightMoveRightLeft(self,pos) :
+        """
+        retourne la possibilité d'une boite de pouvoir verticalement
+        """
+        x,y = pos
+        return self.is_floor((x-1,y)) and self.is_floor((x+1,y))
+    
+    
+    def mightMoveUpDown(self,pos) :
+        """
+        retourne la possibilité d'une boite de pouvoir verticalement
+        """
+        x,y = pos
+        return self.is_floor((x,y-1)) and self.is_floor((x,y+1))
+    
+    
+    # Ajout de notre part ############################################################################### FIN ######
+        
         
         
         
