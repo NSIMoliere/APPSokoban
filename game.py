@@ -15,6 +15,7 @@ from level import *
 from explore import *
 import scores as S
 from queue import Queue
+from time import sleep
 
 # correspondance between keys on keyboard and direction in Sokoban
 KEYDIR = {
@@ -474,11 +475,23 @@ class Game:
                 # Cancel last move
                 self.cancel_move()
 
-            # "Test" key
+            # "Solution" key
             elif event.key == K_t:
                 # Add code here that you would like to trigger with the 'T' key
                 # For now, just move in a circle in the 'test_move' method
+                self.level.gj = GrapheJeu(self.level)
+                self.sol = self.level.gj.solution[:]
+                self.sol.reverse()
                 self.test_move()
+                
+            # "Solution pas à pas" key
+            elif event.key == K_l:
+                # Add code here that you would like to trigger with the 'T' key
+                # For now, just move in a circle in the 'test_move' method
+                self.level.gj = GrapheJeu(self.level)
+                self.sol = self.level.gj.solution[:]
+                self.sol.reverse()
+                self.test_move(True)
                     
             # "Help" key
             elif event.key == K_h:
@@ -707,19 +720,22 @@ class Game:
     
     
     # Ajout de notre part ############################################################################### DEBUT ######
-    def test_move(self):
+    def test_move(self, step=False):
         # Voir ligne 384 : On a tranformé la solution en pile d'actions
         # On dépile puis on effectue l'action
         # une fois seulement à chaque pression  : commenter la boucle while
-        
-        if len(self.sol)>0:
-            self.test_move_and_push(self.sol.pop())
-            #self.wait_key()
-        while len(self.sol)>0:
-            self.test_move_and_push(self.sol.pop())
+        #print(self.sol)
+        if not step:
+            if len(self.sol)>0:
+                self.test_move_and_push(self.sol.pop())
+                #self.wait_key()
+            while len(self.sol)>0:
+                self.test_move_and_push(self.sol.pop())
+        else:
+            if len(self.sol)>0:
+                self.test_move_and_push(self.sol.pop())
 
-        self.wait_key()
-
+        #sleep(.5)
         
     def test_move_and_push(self,posandpush):
         """
